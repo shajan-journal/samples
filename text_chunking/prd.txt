@@ -1,0 +1,18 @@
+Corpus:
+A list of files (html, pdf, txt) and urls 
+A copy of all downloaded documents that can be re-indexed
+
+Index creation:
+Chunks of text/tables/images extracted from files, chunked using different policies
+Policy can be a sliding window with window size and overlap; paragraph by paragraph; whole document; mix of whole and paragraph
+Use a vectordb to store index of all the documents in the corpus
+Use different ML models to create embeddings - including text, table and images
+
+UX
+User query or question and results from different indexes with scores
+Select index to query from - one index for each model x chunking strategy
+Ability to reset and re-index
+Status of each index
+
+API
+An API layer the UX is built on top of

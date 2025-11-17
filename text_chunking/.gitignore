@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+
+# Generated corpus/index artifacts
+data/corpus.json
+data/downloads/
+data/demo_docs/
+data/indexes/
+data/local_docs/
+
+# Misc
+.DS_Store
