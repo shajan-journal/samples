@@ -39,10 +39,25 @@ export class ToolUseCapability extends BaseCapability {
       const stream = this.llmProvider.chatWithTools(messages, toolDefinitions, context.config);
       const { content, toolCalls } = await this.collectStreamWithToolCalls(stream);
 
+      // Log raw LLM output for debugging
+      console.log('[DEBUG] Tool-use LLM output:', content);
+      console.log('[DEBUG] Tool calls:', JSON.stringify(toolCalls, null, 2));
+
+      // Store debug info
+      const debugInfo = {
+        messagesCount: messages.length,
+        rawLLMOutput: content || '(no content)',
+        contentLength: content?.length || 0,
+        toolCallsCount: toolCalls?.length || 0,
+      };
+
       // If no tool calls, return the content
       if (!toolCalls || toolCalls.length === 0) {
         return this.success(content, {
-          reasoning: 'No tools needed for this step'
+          reasoning: 'No tools needed for this step',
+          metadata: {
+            debug: debugInfo,
+          },
         });
       }
 
@@ -52,7 +67,10 @@ export class ToolUseCapability extends BaseCapability {
       // Return results with tool calls
       return this.success(content, {
         toolCalls,
-        metadata: { toolResults }
+        metadata: { 
+          toolResults,
+          debug: debugInfo,
+        }
       });
     } catch (error) {
       return this.error(`Tool use failed: ${(error as Error).message}`);

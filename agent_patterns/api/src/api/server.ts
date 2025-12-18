@@ -3,7 +3,7 @@ import cors from 'cors';
 import { createRoutes } from './routes';
 import { errorHandler, requestLogger } from './middleware';
 import { AgentOrchestrator } from '../orchestrator/orchestrator';
-import { LLMProvider } from '../types';
+import { LLMProvider, LLMConfig } from '../types';
 import { Tool } from '../types';
 
 export interface ServerConfig {
@@ -37,12 +37,13 @@ export function createServer(config: ServerConfig): Application {
 export function startServer(
   llmProvider: LLMProvider,
   tools: Tool[],
-  port: number = 3000
-): Promise<{ app: Application; server: any }> {
+  port: number = 3000,
+  llmConfig?: Partial<LLMConfig>
+): Promise<{ app: Application; server: any; orchestrator: AgentOrchestrator }> {
   return new Promise((resolve, reject) => {
     try {
-      // Create orchestrator
-      const orchestrator = new AgentOrchestrator(llmProvider, tools);
+      // Create orchestrator with LLM config
+      const orchestrator = new AgentOrchestrator(llmProvider, tools, llmConfig);
 
       // Create and start server
       const app = createServer({ port, orchestrator });
@@ -50,7 +51,7 @@ export function startServer(
         console.log(`🚀 API server running on http://localhost:${port}`);
         console.log(`📡 SSE endpoint: http://localhost:${port}/api/execute`);
         console.log(`📋 Patterns: http://localhost:${port}/api/patterns`);
-        resolve({ app, server });
+        resolve({ app, server, orchestrator });
       });
 
       server.on('error', (error: any) => {

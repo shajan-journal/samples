@@ -7,6 +7,8 @@
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:smoke": "scripts/smoke-test.sh",
     "test:tool": "ts-node scripts/test-tool.ts",
     "test:llm": "ts-node scripts/test-llm.ts",
     "test:capability": "ts-node scripts/test-capability.ts",

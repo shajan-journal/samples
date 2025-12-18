@@ -51,17 +51,17 @@ export class ReActPattern extends BasePattern {
     let iteration = 0;
     let isComplete = false;
 
-    yield this.createStep('result', `Starting ReAct pattern for: "${input}"`);
+    yield this.createStep('result', `AGENT: Starting ReAct pattern for: "${input}"`);
 
     while (iteration < maxIterations && !isComplete) {
       iteration++;
 
       if (verbose) {
-        yield this.createStep('result', `\n--- Iteration ${iteration} ---`);
+        yield this.createStep('result', `\n[Iteration ${iteration}]`);
       }
 
       // Step 1: Reasoning
-      yield this.createStep('capability', 'Reasoning about the problem...', {
+      yield this.createStep('capability', 'AGENT-REASONING: Analyzing the problem...', {
         capability: 'reasoning'
       });
 
@@ -72,12 +72,20 @@ export class ReActPattern extends BasePattern {
 
       const reasoningResult = await this.reasoningCapability.execute(reasoningContext);
 
+      // Show debug info if available
+      if (verbose && reasoningResult.metadata?.debug) {
+        const debug = reasoningResult.metadata.debug;
+        yield this.createStep('result', `LLM: ${debug.rawLLMOutput || '(empty response)'}`, {
+          metadata: { debug: { rawOutput: debug.rawLLMOutput, length: debug.contentLength, messagesCount: debug.messagesCount } }
+        });
+      }
+
       if (!reasoningResult.output) {
-        yield this.createStep('error', 'Reasoning failed: No output generated');
+        yield this.createStep('error', 'AGENT-REASONING: Failed - no output generated');
         break;
       }
 
-      yield this.createStep('result', reasoningResult.output, {
+      yield this.createStep('result', `AGENT-REASONING: ${reasoningResult.output}`, {
         metadata: {
           reasoning: reasoningResult.reasoning,
           nextAction: reasoningResult.nextAction
@@ -93,13 +101,13 @@ export class ReActPattern extends BasePattern {
       // Check if task is complete (reasoning indicates completion)
       if (this.isTaskComplete(reasoningResult)) {
         isComplete = true;
-        yield this.createStep('result', '\n✓ Task completed successfully');
+        yield this.createStep('result', 'AGENT: Task completed');
         break;
       }
 
       // Step 2: Action (Tool Use)
       if (context.tools && context.tools.length > 0) {
-        yield this.createStep('capability', 'Deciding if tools are needed...', {
+        yield this.createStep('capability', 'AGENT-TOOL-USE: Evaluating tool needs...', {
           capability: 'tool_use'
         });
 
@@ -109,6 +117,15 @@ export class ReActPattern extends BasePattern {
         };
 
         const toolUseResult = await this.toolUseCapability.execute(toolUseContext);
+
+        // Show debug info if available
+        if (verbose && toolUseResult.metadata?.debug) {
+          const debug = toolUseResult.metadata.debug;
+          const toolInfo = debug.toolCallsCount > 0 ? ` [${debug.toolCallsCount} tool call(s)]` : '';
+          yield this.createStep('result', `LLM:${toolInfo} ${debug.rawLLMOutput || '(empty response)'}`, {
+            metadata: { debug: { rawOutput: debug.rawLLMOutput, length: debug.contentLength, toolCallsCount: debug.toolCallsCount, messagesCount: debug.messagesCount } }
+          });
+        }
 
         // If tools were called
         if (toolUseResult.toolCalls && toolUseResult.toolCalls.length > 0) {
@@ -126,7 +143,7 @@ export class ReActPattern extends BasePattern {
             const toolResult = toolUseResult.metadata?.toolResults?.[i];
 
             yield this.createStep('tool_call', 
-              `Calling tool: ${toolCall.name}(${JSON.stringify(toolCall.arguments)})`,
+              `TOOL: ${toolCall.name}(${JSON.stringify(toolCall.arguments)})`,
               {
                 tool: toolCall.name,
                 metadata: { arguments: toolCall.arguments }
@@ -135,11 +152,15 @@ export class ReActPattern extends BasePattern {
 
             // Step 3: Observation
             if (toolResult) {
+              const resultOutput = toolResult.success
+                ? `${JSON.stringify(toolResult.data)}`
+                : `ERROR: ${toolResult.error}`;
+
               const observationContent = toolResult.success
                 ? `Tool ${toolCall.name} succeeded: ${JSON.stringify(toolResult.data)}`
                 : `Tool ${toolCall.name} failed: ${toolResult.error}`;
 
-              yield this.createStep('result', `Observation: ${observationContent}`, {
+              yield this.createStep('result', `TOOL: ${toolCall.name} -> ${resultOutput}`, {
                 metadata: { toolResult }
               });
 
@@ -155,7 +176,7 @@ export class ReActPattern extends BasePattern {
         } else {
           // No tools needed
           if (toolUseResult.output && toolUseResult.output !== reasoningResult.output) {
-            yield this.createStep('result', `No tools needed: ${toolUseResult.output}`);
+            yield this.createStep('result', `AGENT-TOOL-USE: No tools needed`);
             messages.push({
               role: 'assistant',
               content: toolUseResult.output
@@ -167,18 +188,18 @@ export class ReActPattern extends BasePattern {
       // Check for early termination signals
       if (this.shouldTerminate(reasoningResult)) {
         isComplete = true;
-        yield this.createStep('result', '\n✓ Task completed');
+        yield this.createStep('result', 'AGENT: Task completed');
         break;
       }
     }
 
     if (!isComplete) {
-      yield this.createStep('result', `\n⚠ Reached maximum iterations (${maxIterations})`);
+      yield this.createStep('result', `AGENT: Stopped after ${iteration} iterations (max: ${maxIterations})`);
     }
 
     // Extract final answer from the conversation
     const finalAnswer = this.extractFinalAnswer(messages);
-    yield this.createStep('result', `\nFinal Answer: ${finalAnswer}`, {
+    yield this.createStep('result', `AGENT: Final answer - ${finalAnswer}`, {
       metadata: { iterations: iteration, messages }
     });
   }
@@ -222,7 +243,29 @@ export class ReActPattern extends BasePattern {
    * Extract the final answer from the conversation
    */
   private extractFinalAnswer(messages: Message[]): string {
-    // Get the last assistant message
+    // Look for tool results first (most specific answer)
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'tool') {
+        const content = messages[i].content;
+        // Extract result from tool response
+        if (content.includes('succeeded:')) {
+          const match = content.match(/succeeded:\s*(.+)$/);
+          if (match) {
+            try {
+              const result = JSON.parse(match[1]);
+              if (result.result !== undefined) {
+                return `The answer is ${result.result}`;
+              }
+              return match[1];
+            } catch {
+              return match[1];
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback to last assistant message
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === 'assistant') {
         return messages[i].content;

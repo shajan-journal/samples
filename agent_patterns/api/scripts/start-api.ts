@@ -13,68 +13,66 @@ import { ReActPattern } from '../src/patterns/react';
 import { ReasoningCapability } from '../src/capabilities/reasoning';
 import { ToolUseCapability } from '../src/capabilities/tool-use';
 import { CapabilityRegistry } from '../src/capabilities/base';
-import { LLMProvider } from '../src/types';
+import { LLMProvider, Tool } from '../src/types';
+import { AgentOrchestrator } from '../src/orchestrator/orchestrator';
+import { getConfig } from '../src/config';
 
-// Parse command line arguments
-const args = process.argv.slice(2);
-const options: Record<string, string> = {};
+export interface ServerSetupConfig {
+  port?: number;
+  provider?: 'mock' | 'openai';
+}
 
-args.forEach(arg => {
-  if (arg.startsWith('--')) {
-    const match = arg.match(/^--([^=]+)(?:=(.+))?$/);
-    if (match) {
-      const key = match[1];
-      const value = match[2] || 'true';
-      options[key] = value;
-    }
-  }
-});
+export interface ServerSetup {
+  llmProvider: LLMProvider;
+  tools: Tool[];
+  orchestrator: AgentOrchestrator;
+  port: number;
+  server: any; // HTTP server instance for cleanup
+}
 
-const port = parseInt(options['port'] || process.env.PORT || '3000');
-const provider = options['provider'] || 'mock';
-
-async function main() {
-  console.log('🚀 Starting Agent Patterns API Server');
-  console.log('=====================================');
-  console.log(`Port: ${port}`);
-  console.log(`Provider: ${provider}`);
-  console.log('');
+/**
+ * Set up the server components (provider, tools, patterns) without starting
+ * This is exportable for testing purposes
+ */
+export async function setupServer(config: ServerSetupConfig = {}): Promise<ServerSetup> {
+  const appConfig = getConfig();
+  const port = config.port || appConfig.server.port;
+  const provider = config.provider || appConfig.llm.provider;
 
   // Set up LLM provider
   let llmProvider: LLMProvider;
   
   if (provider === 'openai') {
     if (!process.env.OPENAI_API_KEY) {
-      console.error('❌ Error: OPENAI_API_KEY not set in environment');
-      process.exit(1);
+      throw new Error('OPENAI_API_KEY not set in environment');
     }
     llmProvider = new OpenAIProvider();
-    console.log('✅ Using OpenAI provider');
   } else {
     llmProvider = new MockLLMProvider();
-    // Set up some default mock responses
+    // Set up some default mock responses that demonstrate the full flow
     (llmProvider as MockLLMProvider).setResponses([
-      { content: 'I will help you with that task.' },
-      {
-        content: 'Let me use the calculator',
+      { 
+        content: 'I need to calculate this expression.',
         toolCalls: [
           {
             id: 'call_1',
             name: 'calculator',
             arguments: { expression: '2+2' }
           }
-        ]
+        ],
+        delayMs: 300 // Add delay to make thinking indicator visible
       },
-      { content: 'Task completed successfully.' }
+      { 
+        content: 'The calculation is complete. The answer is 4.',
+        delayMs: 200
+      }
     ]);
-    console.log('✅ Using mock provider');
   }
 
   // Set up tools
   const calculatorTool = new CalculatorTool();
   const fileSystemTool = new FileSystemTool();
   const tools = [calculatorTool, fileSystemTool];
-  console.log(`✅ Registered ${tools.length} tools`);
 
   // Register capabilities (needed for /api/capabilities endpoint)
   const capabilityRegistry = new CapabilityRegistry();
@@ -82,14 +80,68 @@ async function main() {
   const toolUseCapability = new ToolUseCapability(llmProvider);
   capabilityRegistry.register(reasoningCapability);
   capabilityRegistry.register(toolUseCapability);
-  console.log('✅ Registered capabilities');
+
+  // Create LLM config from app config
+  const llmConfig = {
+    provider: appConfig.llm.provider,
+    model: appConfig.llm.model,
+    temperature: appConfig.llm.temperature,
+    maxTokens: appConfig.llm.maxTokens,
+    stream: true
+  };
+
+  // Start server with LLM config
+  const { orchestrator, server } = await startServer(llmProvider, tools, port, llmConfig);
+
+  // Register patterns with the orchestrator
+  const reactPattern = new ReActPattern(llmProvider);
+  orchestrator.registerPattern(reactPattern);
+
+  return { llmProvider, tools, orchestrator, port, server };
+}
+
+// Parse command line arguments
+function parseArgs(): ServerSetupConfig {
+  const args = process.argv.slice(2);
+  const options: Record<string, string> = {};
+
+  args.forEach(arg => {
+    if (arg.startsWith('--')) {
+      const match = arg.match(/^--([^=]+)(?:=(.+))?$/);
+      if (match) {
+        const key = match[1];
+        const value = match[2] || 'true';
+        options[key] = value;
+      }
+    }
+  });
+
+  return {
+    port: options['port'] ? parseInt(options['port']) : undefined,
+    provider: options['provider'] as 'mock' | 'openai' | undefined
+  };
+}
+
+async function main() {
+  const config = parseArgs();
+  
+  console.log('🚀 Starting Agent Patterns API Server');
+  console.log('=====================================');
+  console.log(`Port: ${config.port || process.env.PORT || 3000}`);
+  console.log(`Provider from config: ${config.provider}`);
+  console.log(`Provider from env: ${process.env.LLM_PROVIDER}`);
+  console.log(`Final provider: ${config.provider || process.env.LLM_PROVIDER || 'mock'}`);
+  console.log('');
+  console.log('');
 
   try {
-    // Start server
-    const { app, server } = await startServer(llmProvider, tools, port);
-
-    // Register patterns (after orchestrator is created in startServer)
-    console.log('✅ Registered patterns');
+    const { port, orchestrator, tools, server, llmProvider } = await setupServer(config);
+    
+    const actualProvider = config.provider || process.env.LLM_PROVIDER || 'mock';
+    console.log(`✅ Using ${actualProvider} provider`);
+    console.log(`✅ Registered ${tools.length} tools`);
+    console.log('✅ Registered capabilities');
+    console.log(`✅ Registered ${orchestrator.getPatterns().length} pattern(s)`);
     console.log('');
     console.log('📡 Available endpoints:');
     console.log(`   GET  http://localhost:${port}/api/patterns`);
@@ -120,7 +172,10 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+// Only run main if this file is executed directly (not imported)
+if (require.main === module) {
+  main().catch(error => {
+    console.error('Fatal error:', error);
+    process.exit(1);
+  });
+}

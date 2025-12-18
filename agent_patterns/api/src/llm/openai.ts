@@ -109,7 +109,11 @@ export class OpenAIProvider extends BaseLLMProvider {
         stream_options: { include_usage: true },
       });
 
-      const toolCallBuffers: Map<number, Partial<ToolCall>> = new Map();
+      const toolCallBuffers: Map<number, { 
+        id?: string; 
+        name?: string; 
+        argumentsStr: string; 
+      }> = new Map();
 
       for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta;
@@ -132,7 +136,7 @@ export class OpenAIProvider extends BaseLLMProvider {
               toolCallBuffers.set(index, {
                 id: toolCallDelta.id,
                 name: toolCallDelta.function?.name,
-                arguments: {},
+                argumentsStr: '',
               });
             }
 
@@ -145,17 +149,8 @@ export class OpenAIProvider extends BaseLLMProvider {
               buffer.name = toolCallDelta.function.name;
             }
             if (toolCallDelta.function?.arguments) {
-              // Accumulate arguments
-              const existingArgs = JSON.stringify(buffer.arguments || {});
-              const argsStr = existingArgs === '{}' 
-                ? toolCallDelta.function.arguments
-                : existingArgs.slice(0, -1) + toolCallDelta.function.arguments.slice(1);
-              
-              try {
-                buffer.arguments = JSON.parse(argsStr);
-              } catch {
-                // Still accumulating, not yet valid JSON
-              }
+              // Accumulate arguments string
+              buffer.argumentsStr += toolCallDelta.function.arguments;
             }
           }
         }
@@ -164,10 +159,19 @@ export class OpenAIProvider extends BaseLLMProvider {
           // Emit complete tool calls
           for (const toolCall of toolCallBuffers.values()) {
             if (toolCall.id && toolCall.name) {
-              yield {
-                type: 'tool_call',
-                toolCall: toolCall as ToolCall,
-              };
+              try {
+                yield {
+                  type: 'tool_call',
+                  toolCall: {
+                    id: toolCall.id,
+                    name: toolCall.name,
+                    arguments: JSON.parse(toolCall.argumentsStr || '{}'),
+                  },
+                };
+              } catch (error) {
+                // If JSON parsing fails, log error but don't crash
+                console.error('Failed to parse tool call arguments:', toolCall.argumentsStr);
+              }
             }
           }
 

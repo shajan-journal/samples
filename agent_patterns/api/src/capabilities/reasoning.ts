@@ -34,9 +34,17 @@ export class ReasoningCapability extends BaseCapability {
         },
       ];
 
+      // Log messages for debugging
+      console.log('[DEBUG] Reasoning messages count:', messages.length);
+      console.log('[DEBUG] Last 2 messages:', JSON.stringify(messages.slice(-2), null, 2));
+
       // Call the LLM to perform reasoning
       const stream = this.llmProvider.chat(messages, context.config);
       const { content, usage } = await this.collectStreamContent(stream);
+
+      // Log raw LLM output for debugging
+      console.log('[DEBUG] Raw LLM output:', content);
+      console.log('[DEBUG] Content length:', content?.length || 0);
 
       // Parse the reasoning output
       const { reasoning, conclusion, nextAction } = this.parseReasoningOutput(content);
@@ -47,6 +55,11 @@ export class ReasoningCapability extends BaseCapability {
         metadata: {
           usage,
           capability: this.name,
+          debug: {
+            messagesCount: messages.length,
+            rawLLMOutput: content,
+            contentLength: content?.length || 0,
+          },
         },
       });
     } catch (error) {
