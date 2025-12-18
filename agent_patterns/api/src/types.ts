@@ -130,7 +130,7 @@ export interface LLMProvider {
 // ============================================================================
 
 export interface PatternStep {
-  type: 'capability' | 'tool_call' | 'result' | 'error';
+  type: 'capability' | 'tool_call' | 'info' | 'answer' | 'error';
   capability?: string;
   tool?: string;
   content: string;

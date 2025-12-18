@@ -17,7 +17,7 @@ export abstract class BasePattern implements AgentPattern {
    * Create a pattern step
    */
   protected createStep(
-    type: 'capability' | 'tool_call' | 'result' | 'error',
+    type: 'capability' | 'tool_call' | 'info' | 'answer' | 'error',
     content: string,
     options?: {
       capability?: string;
@@ -68,7 +68,7 @@ export abstract class BasePattern implements AgentPattern {
     content: string,
     metadata?: Record<string, any>
   ): AsyncGenerator<PatternStep> {
-    yield this.createStep('result', content, { metadata });
+    yield this.createStep('info', content, { metadata });
   }
 
   /**

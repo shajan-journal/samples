@@ -15,6 +15,7 @@ import { BasePattern } from './base';
 import { AgentContext, PatternStep, Message, CapabilityResult, LLMProvider } from '../types';
 import { ReasoningCapability } from '../capabilities/reasoning';
 import { ToolUseCapability } from '../capabilities/tool-use';
+import { SynthesisCapability } from '../capabilities/synthesis';
 
 export interface ReActOptions {
   maxIterations?: number;
@@ -27,11 +28,13 @@ export class ReActPattern extends BasePattern {
 
   private reasoningCapability: ReasoningCapability;
   private toolUseCapability: ToolUseCapability;
+  private synthesisCapability: SynthesisCapability;
 
   constructor(llmProvider: LLMProvider) {
     super();
     this.reasoningCapability = new ReasoningCapability(llmProvider);
     this.toolUseCapability = new ToolUseCapability(llmProvider);
+    this.synthesisCapability = new SynthesisCapability(llmProvider);
   }
 
   async *execute(
@@ -51,13 +54,13 @@ export class ReActPattern extends BasePattern {
     let iteration = 0;
     let isComplete = false;
 
-    yield this.createStep('result', `AGENT: Starting ReAct pattern for: "${input}"`);
+    yield this.createStep('info', `AGENT: Starting ReAct pattern for: "${input}"`);
 
     while (iteration < maxIterations && !isComplete) {
       iteration++;
 
       if (verbose) {
-        yield this.createStep('result', `\n[Iteration ${iteration}]`);
+        yield this.createStep('info', `\n[Iteration ${iteration}]`);
       }
 
       // Step 1: Reasoning
@@ -75,7 +78,7 @@ export class ReActPattern extends BasePattern {
       // Show debug info if available
       if (verbose && reasoningResult.metadata?.debug) {
         const debug = reasoningResult.metadata.debug;
-        yield this.createStep('result', `LLM: ${debug.rawLLMOutput || '(empty response)'}`, {
+        yield this.createStep('info', `LLM: ${debug.rawLLMOutput || '(empty response)'}`, {
           metadata: { debug: { rawOutput: debug.rawLLMOutput, length: debug.contentLength, messagesCount: debug.messagesCount } }
         });
       }
@@ -85,7 +88,7 @@ export class ReActPattern extends BasePattern {
         break;
       }
 
-      yield this.createStep('result', `AGENT-REASONING: ${reasoningResult.output}`, {
+      yield this.createStep('info', `AGENT-REASONING: ${reasoningResult.output}`, {
         metadata: {
           reasoning: reasoningResult.reasoning,
           nextAction: reasoningResult.nextAction
@@ -101,12 +104,16 @@ export class ReActPattern extends BasePattern {
       // Check if task is complete (reasoning indicates completion)
       if (this.isTaskComplete(reasoningResult)) {
         isComplete = true;
-        yield this.createStep('result', 'AGENT: Task completed');
+        yield this.createStep('info', 'AGENT: Task completed');
         break;
       }
 
       // Step 2: Action (Tool Use)
-      if (context.tools && context.tools.length > 0) {
+      // Skip tool use if nextAction is 'none' or not specified
+      const shouldUseTool = reasoningResult.nextAction && 
+                           reasoningResult.nextAction.toLowerCase() !== 'none';
+      
+      if (context.tools && context.tools.length > 0 && shouldUseTool) {
         yield this.createStep('capability', 'AGENT-TOOL-USE: Evaluating tool needs...', {
           capability: 'tool_use'
         });
@@ -122,7 +129,7 @@ export class ReActPattern extends BasePattern {
         if (verbose && toolUseResult.metadata?.debug) {
           const debug = toolUseResult.metadata.debug;
           const toolInfo = debug.toolCallsCount > 0 ? ` [${debug.toolCallsCount} tool call(s)]` : '';
-          yield this.createStep('result', `LLM:${toolInfo} ${debug.rawLLMOutput || '(empty response)'}`, {
+          yield this.createStep('info', `LLM:${toolInfo} ${debug.rawLLMOutput || '(empty response)'}`, {
             metadata: { debug: { rawOutput: debug.rawLLMOutput, length: debug.contentLength, toolCallsCount: debug.toolCallsCount, messagesCount: debug.messagesCount } }
           });
         }
@@ -160,7 +167,7 @@ export class ReActPattern extends BasePattern {
                 ? `Tool ${toolCall.name} succeeded: ${JSON.stringify(toolResult.data)}`
                 : `Tool ${toolCall.name} failed: ${toolResult.error}`;
 
-              yield this.createStep('result', `TOOL: ${toolCall.name} -> ${resultOutput}`, {
+              yield this.createStep('info', `TOOL: ${toolCall.name} -> ${resultOutput}`, {
                 metadata: { toolResult }
               });
 
@@ -176,31 +183,58 @@ export class ReActPattern extends BasePattern {
         } else {
           // No tools needed
           if (toolUseResult.output && toolUseResult.output !== reasoningResult.output) {
-            yield this.createStep('result', `AGENT-TOOL-USE: No tools needed`);
+            yield this.createStep('info', `AGENT-TOOL-USE: No tools needed`);
             messages.push({
               role: 'assistant',
               content: toolUseResult.output
             });
           }
         }
+      } else if (context.tools && context.tools.length > 0) {
+        // Tools available but not needed based on reasoning
+        yield this.createStep('info', 'AGENT-TOOL-USE: No tools needed based on reasoning');
+        // If we have a definitive answer and no tools needed, we're done
+        if (this.hasDefinitiveAnswer(reasoningResult)) {
+          isComplete = true;
+          yield this.createStep('info', 'AGENT: Task completed with definitive answer');
+          break;
+        }
       }
 
       // Check for early termination signals
       if (this.shouldTerminate(reasoningResult)) {
         isComplete = true;
-        yield this.createStep('result', 'AGENT: Task completed');
+        yield this.createStep('info', 'AGENT: Task completed');
         break;
       }
     }
 
     if (!isComplete) {
-      yield this.createStep('result', `AGENT: Stopped after ${iteration} iterations (max: ${maxIterations})`);
+      yield this.createStep('info', `AGENT: Stopped after ${iteration} iterations (max: ${maxIterations})`);
     }
 
-    // Extract final answer from the conversation
-    const finalAnswer = this.extractFinalAnswer(messages);
-    yield this.createStep('result', `AGENT: Final answer - ${finalAnswer}`, {
-      metadata: { iterations: iteration, messages }
+    // Synthesize final answer from the conversation
+    yield this.createStep('capability', 'AGENT-SYNTHESIS: Synthesizing final answer...', {
+      capability: 'synthesis'
+    });
+
+    const synthesisContext: AgentContext = {
+      ...context,
+      messages
+    };
+
+    const synthesisResult = await this.synthesisCapability.execute(synthesisContext);
+
+    if (!synthesisResult.output) {
+      yield this.createStep('error', 'AGENT-SYNTHESIS: Failed to synthesize answer');
+      return;
+    }
+
+    yield this.createStep('answer', synthesisResult.output, {
+      metadata: { 
+        iterations: iteration, 
+        sources: synthesisResult.metadata?.sources 
+      }
     });
   }
 
@@ -234,44 +268,38 @@ export class ReActPattern extends BasePattern {
       if (nextAction.includes('terminate') || nextAction.includes('complete')) {
         return true;
       }
+      // If nextAction is 'none', it means the reasoning is complete
+      if (nextAction === 'none') {
+        return true;
+      }
     }
 
     return false;
   }
 
   /**
-   * Extract the final answer from the conversation
+   * Check if reasoning provides a definitive answer
    */
-  private extractFinalAnswer(messages: Message[]): string {
-    // Look for tool results first (most specific answer)
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'tool') {
-        const content = messages[i].content;
-        // Extract result from tool response
-        if (content.includes('succeeded:')) {
-          const match = content.match(/succeeded:\s*(.+)$/);
-          if (match) {
-            try {
-              const result = JSON.parse(match[1]);
-              if (result.result !== undefined) {
-                return `The answer is ${result.result}`;
-              }
-              return match[1];
-            } catch {
-              return match[1];
-            }
-          }
-        }
-      }
+  private hasDefinitiveAnswer(result: CapabilityResult): boolean {
+    if (!result.output) return false;
+
+    const output = result.output.toLowerCase();
+    const definitiveSignals = [
+      'the answer is',
+      'the result is',
+      'the sum is',
+      'the product is',
+      'the value is',
+      'therefore',
+      'thus',
+      'in conclusion'
+    ];
+
+    // Check if nextAction is 'none' (explicit signal)
+    if (result.nextAction && result.nextAction.toLowerCase() === 'none') {
+      return true;
     }
 
-    // Fallback to last assistant message
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === 'assistant') {
-        return messages[i].content;
-      }
-    }
-
-    return 'No answer generated';
+    return definitiveSignals.some(signal => output.includes(signal));
   }
 }

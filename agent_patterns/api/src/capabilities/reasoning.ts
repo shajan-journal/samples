@@ -74,11 +74,12 @@ export class ReasoningCapability extends BaseCapability {
    */
   private buildReasoningPrompt(context: AgentContext): string {
     const hasTools = context.tools && context.tools.length > 0;
+    const hasToolResults = context.messages.some(m => m.role === 'tool');
 
     let prompt = `You are performing a reasoning task. Analyze the conversation and available information to reach a logical conclusion.
 
 Instructions:
-1. Review the conversation history carefully
+1. Review the conversation history carefully${hasToolResults ? ' including any tool results' : ''}
 2. Identify key facts and information
 3. Apply logical reasoning to draw conclusions
 4. Clearly explain your reasoning process
@@ -89,6 +90,11 @@ Instructions:
       prompt += `\n6. If you need additional information, suggest which tool to use (available tools: ${toolNames})`;
     }
 
+    if (hasToolResults) {
+      prompt += `\n
+Note: Tool results are already available in the conversation. Use them to form your conclusion.`;
+    }
+
     prompt += `
 
 Format your response as follows:
@@ -96,7 +102,7 @@ REASONING: [Your step-by-step reasoning process]
 CONCLUSION: [Your final conclusion]`;
 
     if (hasTools) {
-      prompt += `\nNEXT_ACTION: [What should be done next, or which tool to use if needed, or "none" if complete]`;
+      prompt += `\nNEXT_ACTION: [Which tool to use if needed, or "none" if you can answer directly or if tool results are sufficient]`;
     }
 
     return prompt;

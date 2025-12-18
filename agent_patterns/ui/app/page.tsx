@@ -77,21 +77,23 @@ export default function HomePage() {
   function applyEvent(runId: string, event: ExecutionEvent) {
     const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
     const { eventType, data } = event;
+    
+    // Skip unknown or empty events
+    if (!eventType || !data) return;
+    
     const line = formatEventLine(time, eventType, data);
 
     setEvents((prev) => [...prev, line]);
 
-    // Only show final answer and errors in chat - everything else is just in event log
-    if (eventType === 'step' && data.content?.includes('Final Answer')) {
-      // Extract just the answer part, remove the "Final Answer:" prefix
-      const content = data.content.replace(/.*Final Answer:\s*/i, '').trim();
+    // Show final answer in chat when synthesis produces answer
+    if (eventType === 'step' && data.type === 'answer') {
       // Remove thinking indicator and add actual answer
       setMessages((prev) => [
         ...prev.filter(m => !m.id.includes('-thinking')),
         {
           id: `${runId}-answer`,
           role: 'assistant',
-          content: content
+          content: data.content
         }
       ]);
     }
@@ -184,31 +186,27 @@ export default function HomePage() {
 function formatEventLine(time: string, eventType: ExecutionEvent['eventType'], data: any) {
   switch (eventType) {
     case 'start':
-      return `[${time}] 🚀 START pattern=${data.pattern} input="${data.input}"`;
+      return `[${time}] START pattern=${data.pattern} input="${data.input}"`;
     case 'step':
-      return `[${time}] ${iconFor(data.type)} ${data.type?.toUpperCase() || 'STEP'} ${data.capability ? `cap=${data.capability}` : ''} ${data.tool ? `tool=${data.tool}` : ''} ${data.content ?? ''}`.trim();
+      const typeLabel = data.type && data.type !== 'info' ? `${data.type.toUpperCase()} ` : '';
+      return `[${time}] ${typeLabel}${data.capability ? `cap=${data.capability} ` : ''}${data.tool ? `tool=${data.tool} ` : ''}${data.content ?? ''}`.trim();
     case 'complete':
-      return `[${time}] ✅ COMPLETE status=${data.status} duration=${data.duration}ms`;
+      return `[${time}] COMPLETE status=${data.status} duration=${data.duration}ms`;
     case 'error':
       return `[${time}] ❌ ERROR ${data.error || ''}`;
     case 'visualization':
-      return `[${time}] 📊 VISUALIZATION data available`;
+      return `[${time}] VISUALIZATION data available`;
     default:
-      return `[${time}] EVENT`;
+      // Don't display unknown event types
+      return '';
   }
 }
 
 function iconFor(type?: string) {
   switch (type) {
-    case 'capability':
-      return '🧠';
-    case 'tool_call':
-      return '🔧';
-    case 'result':
-      return '✅';
     case 'error':
       return '❌';
     default:
-      return '📝';
+      return '';
   }
 }
