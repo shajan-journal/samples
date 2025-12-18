@@ -87,8 +87,8 @@ interface ToolResult {
 ```
 
 **Implementations:**
-- 🚧 `NodeExecutionTool` - Execute JavaScript/Node.js code in sandboxed vm (Planned)
-- 🚧 `PythonExecutionTool` - Execute Python code in isolated virtual environment (Planned)
+- ✅ `NodeExecutionTool` - Execute JavaScript/Node.js code in sandboxed vm (IMPLEMENTED)
+- ✅ `PythonExecutionTool` - Execute Python code in subprocess with timeout (IMPLEMENTED)
 - ✅ `FileSystemTool` - Read/write files for data persistence (IMPLEMENTED)
 - 🚧 `WebFetchTool` - Download content from URLs (Planned)
 - ✅ `CalculatorTool` - Mathematical calculations (IMPLEMENTED)

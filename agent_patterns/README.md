@@ -36,9 +36,20 @@ npm run test:orchestrator -- react "Calculate 2+2"
 ## Setup and Operations
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 18+ (for running the project and NodeExecutionTool)
 - npm or yarn
-- Python 3.8+ (optional, for future Python execution tool)
+- Python 3.8+ (required for PythonExecutionTool)
+
+**Install Node.js:**
+- macOS: `brew install node` or download from [nodejs.org](https://nodejs.org/)
+- Linux: `sudo apt install nodejs npm` or use [nvm](https://github.com/nvm-sh/nvm)
+- Windows: Download installer from [nodejs.org](https://nodejs.org/)
+
+**Install Python 3:**
+- macOS: `brew install python3` or download from [python.org](https://www.python.org/)
+- Linux: `sudo apt install python3` (usually pre-installed)
+- Windows: Download installer from [python.org](https://www.python.org/)
+- Verify: `python3 --version` should show Python 3.8 or higher
 
 ### Configure (optional)
 ```bash
@@ -66,6 +77,8 @@ npm run test:all
 
 # API only (Jest)
 npm run test:api
+- Python not found: Make sure `python3` command works in your terminal. On some systems, you may need to create a symlink or use `python` instead.
+- Code execution timeouts: Increase timeout values in tool parameters if needed for longer-running code.
 
 # UI only (Vitest)
 npm run test:ui
@@ -235,6 +248,58 @@ npm run test:tool -- file_system '{"action":"exists","path":"test.txt"}'
 
 **Security Features:**
 - All paths are relative to the configured workspace directory
+- Directory traversal (`../`) is blocked
+- Cannot access files outside workspace
+
+### Node Execution Tool
+
+Execute JavaScript/Node.js code in a sandboxed environment.
+
+**Usage:**
+```bash
+# Simple execution
+npm run test:tool -- node_execute '{"code":"console.log(2 + 2)"}'
+
+# With custom timeout
+npm run test:tool -- node_execute '{"code":"console.log(Math.sqrt(16))","timeout":3000}'
+```
+
+**Features:**
+- Sandboxed execution using Node.js vm module
+- Captures console.log/error/warn/info output
+- Configurable timeout (default: 5000ms)
+- Returns result value and captured output
+
+**Security:**
+- Disabled: `require`, `process`, `setTimeout`, `setInterval`
+- No file system or network access
+- Timeout enforcement prevents infinite loops
+
+### Python Execution Tool
+
+Execute Python code in a subprocess with timeout.
+
+**Usage:**
+```bash
+# Simple execution
+npm run test:tool -- python_execute '{"code":"print(2 + 2)"}'
+
+# With custom timeout
+npm run test:tool -- python_execute '{"code":"import math\\nprint(math.sqrt(16))","timeout":5000}'
+```
+
+**Features:**
+- Spawns Python subprocess for execution
+- Captures stdout and stderr separately
+- Configurable timeout (default: 10000ms)
+- Tracks execution time
+- Returns exit code and all output
+
+**Requirements:**
+- Python 3.8+ must be installed
+- `python3` command must be available in PATH
+
+**Security Features:**
 - Directory traversal protection prevents access outside workspace
 - Automatically creates nested directories when needed
 - Returns detailed error messages for debugging
@@ -598,14 +663,15 @@ See [current_state.md](current_state.md) for the current implementation progress
 **Completed:**
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, File System)
+- ✅ Code execution tools (Node.js, Python)
 - ✅ LLM providers (Mock, OpenAI)
 - ✅ Agent capabilities (Reasoning, ToolUse, Synthesis)
 - ✅ Agentic patterns (ReAct)
 - ✅ Orchestrator
 - ✅ API Layer (Express + SSE)
 - ✅ UI Layer (Next.js with SSE streaming)
-- 🚧 Code Execution Tools (planned)
-- 🚧 Additional patterns (Plan-Execute, Reflection, etc.)
+- 🚧 Self-correcting patterns (next)
+- 🚧 Additional patterns and capabilities
 
 ## Documentation
 

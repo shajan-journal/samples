@@ -321,7 +321,7 @@ describe('AgentOrchestrator', () => {
   describe('Real Pattern Integration', () => {
     test('should work with ReAct pattern', async () => {
       mockProvider.setResponses([
-        { content: 'I need to calculate 2+2' },
+        { content: 'I need to calculate 2+2. NEXT_ACTION: use calculator tool' },
         {
           content: 'Using calculator',
           toolCalls: [
