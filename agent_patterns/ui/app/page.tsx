@@ -10,6 +10,12 @@ type ChatMessage = {
   hint?: string;
 };
 
+type Session = {
+  id: string;
+  startedAt: number;
+  messageCount: number;
+};
+
 const defaultInput = 'Calculate 2+2';
 const defaultPatterns = [{ name: 'react', description: 'Reason + Act pattern' }];
 
@@ -21,6 +27,11 @@ export default function HomePage() {
   const [events, setEvents] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<Session>({
+    id: `session-${Date.now()}`,
+    startedAt: Date.now(),
+    messageCount: 0
+  });
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const apiBase = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000', []);
@@ -44,6 +55,20 @@ export default function HomePage() {
       });
   }, [apiBase]);
 
+  function clearChat() {
+    if (loading) return;
+    
+    setMessages([]);
+    setEvents([]);
+    setError(null);
+    setInput(defaultInput);
+    setSession({
+      id: `session-${Date.now()}`,
+      startedAt: Date.now(),
+      messageCount: 0
+    });
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -56,6 +81,9 @@ export default function HomePage() {
     setEvents([]);
     setError(null);
     setLoading(true);
+    
+    // Update session message count
+    setSession(prev => ({ ...prev, messageCount: prev.messageCount + 1 }));
 
     try {
       for await (const event of streamExecution({ pattern, input })) {
@@ -110,20 +138,42 @@ export default function HomePage() {
     <main>
       <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', gap: 12 }}>
         <header style={{ padding: '12px 0', borderBottom: '1px solid rgba(226, 232, 240, 0.1)' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ flex: 1 }}>
               <h1 style={{ margin: 0, fontSize: '20px' }}>Agent Patterns</h1>
               <p className="small" style={{ margin: '4px 0 0' }}>
                 Pattern: <strong>{pattern}</strong>
+                {messages.length > 0 && (
+                  <span style={{ marginLeft: '12px', opacity: 0.6 }}>
+                    • {session.messageCount} {session.messageCount === 1 ? 'turn' : 'turns'}
+                  </span>
+                )}
               </p>
             </div>
-            <select value={pattern} onChange={(e) => setPattern(e.target.value)} disabled={loading} style={{ width: 'auto', fontSize: '13px', padding: '6px 10px' }}>
-              {patterns.map((p) => (
-                <option key={p.name} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            <div className="row" style={{ gap: '8px' }}>
+              {messages.length > 0 && (
+                <button 
+                  onClick={clearChat} 
+                  disabled={loading}
+                  className="secondary-button"
+                  title="Start a new conversation"
+                >
+                  New Chat
+                </button>
+              )}
+              <select 
+                value={pattern} 
+                onChange={(e) => setPattern(e.target.value)} 
+                disabled={loading} 
+                style={{ width: 'auto', fontSize: '13px', padding: '6px 10px' }}
+              >
+                {patterns.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </header>
 

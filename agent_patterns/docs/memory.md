@@ -7,13 +7,13 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, FileSystem)
 - ✅ LLM providers (Mock, OpenAI)
-- ✅ Capabilities (Reasoning, ToolUse)
+- ✅ Capabilities (Reasoning, ToolUse, Synthesis)
 - ✅ Patterns (ReAct)
 - ✅ Orchestrator (AgentOrchestrator)
 - ✅ API Layer (Express + SSE)
 - ✅ UI Layer (Next.js chat, SSE streaming)
 
-**Tests:** 170 passing across core/API + 2 passing in UI (Vitest)
+**Tests:** 167 passing across core/API + 2 passing in UI (Vitest)
 
 ## Code Organization
 
@@ -25,6 +25,7 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
       base.ts          # BaseCapability abstract class + CapabilityRegistry
       reasoning.ts     # LLM-based logical reasoning
       tool-use.ts      # Execute tools based on LLM decisions
+      synthesis.ts     # Combines information into coherent conclusions
       index.ts         # Exports
       
     /patterns/         # Orchestrated workflows

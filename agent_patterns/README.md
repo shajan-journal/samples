@@ -599,12 +599,13 @@ See [current_state.md](current_state.md) for the current implementation progress
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, File System)
 - ✅ LLM providers (Mock, OpenAI)
-- ✅ Agent capabilities (Reasoning, ToolUse)
+- ✅ Agent capabilities (Reasoning, ToolUse, Synthesis)
 - ✅ Agentic patterns (ReAct)
 - ✅ Orchestrator
 - ✅ API Layer (Express + SSE)
-- 🚧 UI Layer (next)
-- 🚧 Code Execution Tools
+- ✅ UI Layer (Next.js with SSE streaming)
+- 🚧 Code Execution Tools (planned)
+- 🚧 Additional patterns (Plan-Execute, Reflection, etc.)
 
 ## Documentation
 

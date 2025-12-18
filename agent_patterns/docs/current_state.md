@@ -290,16 +290,19 @@
 ### 9. Code Execution Tools
 **Status**: Not Started
 
+**Rationale**: Code execution tools unlock advanced agentic patterns (iterative refinement, self-correction, data analysis loops) that can't be demonstrated with basic tools. Simple sandbox approach for learning/exploration.
+
 **Tasks:**
-- Implement NodeExecutionTool
-  - Use vm module for sandboxing
+- Implement NodeExecutionTool (simple vm-based sandbox)
+  - Use vm.Script for sandboxing
   - Built-in timeout and memory limits
-  - No external dependencies
-- Implement PythonExecutionTool
-  - Virtual environment creation
-  - Package installation (pip)
-  - Process spawning and management
-  - Cleanup and timeout handling
+  - Capture stdout/stderr
+  - No external package installation
+- Implement PythonExecutionTool (simple subprocess-based)
+  - Spawn python subprocess with timeout
+  - Capture stdout/stderr and return code
+  - Optional: Basic venv support for package isolation
+  - File output capture (CSV, JSON, images)
 
 **Testing:**
 - Unit tests for NodeExecutionTool
@@ -308,7 +311,7 @@
   - Test memory limits
   - Test scripts: `npm run test:tool -- node_execute "console.log('hello')"`
 - Unit tests for PythonExecutionTool
-  - Test venv creation and package installation
+  - Test code execution and output capture
   - Test stdout/stderr capture
   - Test timeout enforcement
   - Test error handling
@@ -316,74 +319,83 @@
 
 ---
 
-### 10. Visualization
+### 10. Self-Correcting Patterns (Enabled by Code Execution)
+**Status**: Not Started
+
+**Rationale**: With code execution, we can demonstrate patterns that iterate on failures - a key capability of advanced agents.
+
+**Tasks:**
+- Implement IterativeRefinementPattern
+  - Generate code → Execute → Analyze errors → Refine → Repeat
+  - Demonstrates self-correction based on execution feedback
+- Implement PlanAndValidatePattern
+  - Plan approach → Generate code → Execute tests → Fix issues
+  - Shows test-driven development pattern
+- Add ValidationCapability
+  - Checks code execution results against expected outcomes
+  - Identifies errors and suggests corrections
+
+**Testing:**
+- Test iterative refinement with intentionally buggy code prompts
+- Test convergence to correct solution
+- Test max iteration limits
+- Integration test: "Write Python code to calculate factorial" → self-correcting loop
+- Test scripts: `npm run test:pattern -- iterative-refinement "Generate function with bug"`
+
+---
+
+### 11. Visualization
 **Status**: Not Started
 
 **Tasks:**
-- Update PythonExecutionTool to parse visualization manifest
+- Update PythonExecutionTool to detect visualization outputs
 - Implement data file reading (CSV, JSON)
 - Add visualization components (Table, Chart renderers)
-- Integrate with chat UI
+- Integrate with chat UI to display execution results
 
 **Testing:**
-- Unit tests for manifest parsing
-- Test CSV/JSON data loading
+- Unit tests for data parsing
 - Component tests for each visualization type
 - Test with mock data
-- Integration test: Python code → manifest → UI rendering
+- Integration test: Python code → data output → UI rendering
+- Test scripts: `npm run test:tool -- python_execute "import pandas; df.to_csv('output.csv')"`
 
 ---
 
-### 11. UI - Debug View
+### 12. Additional Patterns & Capabilities
 **Status**: Not Started
 
 **Tasks:**
-- Create debug panel component
-- Add prompt display
-- Add tool call/response display
-- Add token usage and timing display
-- Implement toggle/collapsible sections
-
-**Testing:**
-- Component tests for debug panel
-- Test with mock execution events
-- Test expand/collapse functionality
-- Manual testing with real execution data
-
----
-
-### 12. More Capabilities & Patterns
-**Status**: Not Started
-
-**Tasks:**
-- Implement remaining capabilities (Planning, Reflection, Critique, etc.)
-- Implement remaining patterns (Plan-Execute, Reflection, Tree-of-Thoughts, etc.)
-- Implement JIT pattern for dynamic composition
+- Implement PlanningCapability (breaks tasks into steps)
+- Implement ReflectionCapability (analyzes past actions)
+- Implement Plan-Execute pattern (plan upfront, execute sequentially)
+- Implement Reflection pattern (generate → critique → refine)
+- Implement Tree-of-Thoughts pattern (explore multiple paths)
+- Implement EnsemblePattern (run multiple approaches, aggregate)
 
 **Testing:**
 - Unit tests for each capability
 - Unit tests for each pattern
 - Integration tests showing pattern differences
-- Test scripts for each: `npm run test:pattern -- plan-execute "Task"`
-
-**Note**: ToolUseCapability has been completed in Step 5.
+- Test scripts for each: `npm run test:pattern -- plan-execute "Complex task"`
 
 ---
 
-### 13. Testing & Scripts
+### 13. UI Enhancements & Testing
 **Status**: Not Started
 
 **Tasks:**
+- Add UI debug view (prompts, tool calls, tokens, timing)
+- Add execution history and replay
 - Create comprehensive test suite
 - Add integration tests for full workflows
-- Create CLI test scripts for all components
 - Add example prompts and expected outputs
-- Document testing approach
+- Performance and load testing
 
 **Testing:**
+- Component tests for debug panel
 - Run full test suite: `npm test`
 - Run integration tests: `npm run test:integration`
-- Run all test scripts: `npm run test:all-scripts`
 - Performance testing for streaming
 - Load testing for API endpoints
 
@@ -391,21 +403,27 @@
 
 ## Current Status Summary
 
-**Completed Steps**: 5/13  
+**Completed Steps**: 8/13  
 **In Progress**: None  
 **Blocked**: None  
 
-**Test Results**: All 143 tests passing
-- Types: 31 tests
-- Tools (Calculator + FileSystem): 85 tests
-- LLM Providers (Mock + OpenAI): 32 tests
-- Capabilities (Reasoning + ToolUse): 22 tests
-- Patterns (ReAct): 12 tests
+**Step 9: Code Execution Tools** - Priority next step to unlock advanced patterns
+- Implement simple NodeExecutionTool (vm-based sandbox)
+- Implement simple PythonExecutionTool (subprocess with timeout)
+- Focus on basic execution and output capture
+- Enable self-correcting and iterative refinement patterns
+
+**Why This Order:**
+Code execution is a foundational capability that enables a new class of agentic patterns (self-correction, iterative refinement, data analysis) that can't be demonstrated with basic tools alone. Once implemented, it opens the door to more sophisticated pattern demonstrations.assing
+- Patterns (ReAct): Tests passing
+- Orchestrator: Most tests passing
+- API: Tests passing
+- UI: 2 tests passing
 
 ## Next Action
 
-Proceed to Step 6: Orchestrator
-- Implement AgentOrchestrator class
-- Add pattern registry and loading
-- Implement streaming event emission
-- Add error handling and recovery
+Continue with remaining patterns and capabilities:
+- Implement additional patterns (Plan-and-Execute, ReWOO, Reflection, etc.)
+- Add more capabilities (Planning, Reflection, Critique, Memory, etc.)
+- Enhance UI with visualization support
+- Add more tools (Python/Node execution, web fetch, etc.)

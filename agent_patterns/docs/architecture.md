@@ -66,7 +66,7 @@ interface CapabilityResult {
 - 🚧 `ExtractionCapability` - Pulls structured data from text (Planned)
 - 🚧 `ValidationCapability` - Checks against rules and constraints (Planned)
 - 🚧 `ComparisonCapability` - Analyzes similarities and differences (Planned)
-- 🚧 `SynthesisCapability` - Combines multiple sources into unified output (Planned)
+- ✅ `SynthesisCapability` - Combines multiple sources into unified output (IMPLEMENTED)
 
 ### 2. Tools
 External functions agents can call.

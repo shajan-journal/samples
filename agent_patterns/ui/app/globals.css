@@ -43,6 +43,26 @@ button {
 }
 button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35); }
 button:active { transform: translateY(0); }
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.secondary-button {
+  background: rgba(226, 232, 240, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.secondary-button:hover {
+  background: rgba(226, 232, 240, 0.15);
+  box-shadow: none;
+}
+.secondary-button:active {
+  background: rgba(226, 232, 240, 0.08);
+}
 .grid { display: grid; gap: 16px; }
 .log {
   margin-top: 16px;
