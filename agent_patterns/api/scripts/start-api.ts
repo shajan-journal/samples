@@ -77,10 +77,11 @@ async function main() {
   console.log(`✅ Registered ${tools.length} tools`);
 
   // Register capabilities (needed for /api/capabilities endpoint)
+  const capabilityRegistry = new CapabilityRegistry();
   const reasoningCapability = new ReasoningCapability(llmProvider);
   const toolUseCapability = new ToolUseCapability(llmProvider);
-  CapabilityRegistry.register(reasoningCapability);
-  CapabilityRegistry.register(toolUseCapability);
+  capabilityRegistry.register(reasoningCapability);
+  capabilityRegistry.register(toolUseCapability);
   console.log('✅ Registered capabilities');
 
   try {

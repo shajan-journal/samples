@@ -6,6 +6,8 @@
 
 ## Implementation Plan
 
+**Note:** The project uses a monorepo workspace structure with `api/` and `ui/` at the same level. All backend code is in the `api/` workspace, and frontend code is in the `ui/` workspace. Use workspace commands from the root: `npm run dev:api`, `npm run dev:ui`, `npm run test:api`, `npm run test:ui`.
+
 ### 1. Core Types & Contracts
 **Status**: ✅ Completed
 

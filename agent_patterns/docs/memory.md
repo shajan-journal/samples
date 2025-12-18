@@ -19,69 +19,82 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
 
 ### Directory Structure
 ```
-/src
-  /capabilities/      # Agent skills (reasoning, tool-use, etc.)
-    base.ts          # BaseCapability abstract class + CapabilityRegistry
-    reasoning.ts     # LLM-based logical reasoning
-    tool-use.ts      # Execute tools based on LLM decisions
-    index.ts         # Exports
-    
-  /patterns/         # Orchestrated workflows
-    base.ts          # BasePattern abstract class + PatternRegistry
-    react.ts         # Reasoning + Acting loop pattern
-    index.ts         # Exports
-    
-  /tools/            # External functions
-    base.ts          # BaseTool abstract class + ToolRegistry
-    calculator.ts    # Math calculations with security
-    file-system.ts   # File ops in sandboxed workspace
-    index.ts         # Exports
-    
-  /llm/              # LLM provider abstractions
-    base.ts          # BaseLLMProvider + LLMProviderRegistry
-    mock.ts          # MockLLMProvider for testing
-    openai.ts        # OpenAIProvider with streaming
-    index.ts         # Exports
-    
-  /orchestrator/     # Main execution engine
-    orchestrator.ts  # AgentOrchestrator class
-    index.ts         # Exports
-    
-  /api/              # HTTP API layer
-    server.ts        # Express server setup
-    routes.ts        # API endpoints
-    middleware.ts    # Logging and error handling
-    index.ts         # Exports
-    
-  types.ts           # All TypeScript interfaces
-  config.ts          # Environment variable management
+/api                    # Backend workspace
+  /src
+    /capabilities/      # Agent skills (reasoning, tool-use, etc.)
+      base.ts          # BaseCapability abstract class + CapabilityRegistry
+      reasoning.ts     # LLM-based logical reasoning
+      tool-use.ts      # Execute tools based on LLM decisions
+      index.ts         # Exports
+      
+    /patterns/         # Orchestrated workflows
+      base.ts          # BasePattern abstract class + PatternRegistry
+      react.ts         # Reasoning + Acting loop pattern
+      index.ts         # Exports
+      
+    /tools/            # External functions
+      base.ts          # BaseTool abstract class + ToolRegistry
+      calculator.ts    # Math calculations with security
+      file-system.ts   # File ops in sandboxed workspace
+      index.ts         # Exports
+      
+    /llm/              # LLM provider abstractions
+      base.ts          # BaseLLMProvider + LLMProviderRegistry
+      mock.ts          # MockLLMProvider for testing
+      openai.ts        # OpenAIProvider with streaming
+      index.ts         # Exports
+      
+    /orchestrator/     # Main execution engine
+      orchestrator.ts  # AgentOrchestrator class
+      index.ts         # Exports
+      
+    /api/              # HTTP API layer
+      server.ts        # Express server setup
+      routes.ts        # API endpoints
+      middleware.ts    # Logging and error handling
+      index.ts         # Exports
+      
+    types.ts           # All TypeScript interfaces
+    config.ts          # Environment variable management
 
-/scripts/            # CLI test utilities
-  test-tool.ts       # Test individual tools
-  test-llm.ts        # Test LLM providers
-  test-capability.ts # Test capabilities
-  test-pattern.ts    # Test patterns
-  test-orchestrator.ts # Test orchestrator
-  start-api.ts       # Start API server
-  test-pattern.ts    # Test patterns
+  /scripts/            # CLI test utilities
+    test-tool.ts       # Test individual tools
+    test-llm.ts        # Test LLM providers
+    test-capability.ts # Test capabilities
+    test-pattern.ts    # Test patterns
+    test-orchestrator.ts # Test orchestrator
+    start-api.ts       # Start API server
 
-/tests/              # Mirrors /src structure
-  capabilities/
-  patterns/
-  tools/
-  llm/
-  types.test.ts
+  /tests/              # Mirrors /src structure
+    capabilities/
+    patterns/
+    tools/
+    llm/
+    types.test.ts
 
-/docs/               # Documentation
+  package.json
+  tsconfig.json
+  jest.config.js
+  .env / .env.example
+
+/ui                    # Frontend workspace (Next.js)
+  /app                 # Next.js app router
+  /lib                 # UI utilities (SSE, etc.)
+  /__tests__           # Vitest tests
+  package.json
+  tsconfig.json
+  vitest.config.ts
+
+/docs/                 # Documentation
   prd.md            # Product requirements
   architecture.md   # Technical design
   scenario.md       # Use cases and tools
   current_state.md  # Implementation progress
   memory.md         # This file
 
-/ui                 # Next.js UI (SSE chat client)
+/workspace/            # Sandboxed directory for file operations
 
-/workspace/          # Sandboxed directory for file operations
+package.json          # Workspace root configuration
 ```
 
 ## Key Design Patterns
@@ -264,21 +277,29 @@ LLMConfig { provider, model, temperature?, maxTokens?, stream?, apiKey? }
 
 ### Running Tests
 ```bash
-npm test                    # Core/API tests (Jest)
-npm test -- <filename>      # Specific test file (Jest)
-npm run test:watch          # Watch mode (Jest)
+# From root (workspace)
+npm run test:all          # All tests (both workspaces)
+npm run test:api          # API tests (Jest)
+npm run test:ui           # UI tests (Vitest)
+
+# From api/ directory (if working in API workspace)
+npm test                  # All API tests
+npm test -- <filename>    # Specific test file (Jest)
+npm run test:watch        # Watch mode (Jest)
 
 # UI (Next.js) tests
 cd ui && npm test           # Vitest run (non-watch)
 cd ui && npm run test:watch # Vitest watch
 
-# Manual testing
+# Manual testing (from api/ directory)
 npm run test:tool -- calculator "2+2"
 npm run test:llm -- openai "Hello"
 npm run test:capability -- reasoning "What is 2+2?"
 npm run test:pattern -- react "Calculate factorial of 5"
 npm run test:orchestrator -- react "What is sqrt(144)?" --debug
-npm run start:api  # Start API server (mock)
+
+# Start API server (from root)
+npm run dev:api  # Starts on port 3000 by default
 ```
 
 ### Test Organization
@@ -289,9 +310,9 @@ npm run start:api  # Start API server (mock)
 
 ## Configuration Management
 
-### Environment Variables (src/config.ts)
+### Environment Variables (api/src/config.ts)
 ```typescript
-WORKSPACE_DIR    # Default: ./workspace
+WORKSPACE_DIR    # Default: ./workspace (relative to repo root)
 LLM_PROVIDER     # Default: mock
 LLM_API_KEY      # Required for OpenAI
 LLM_MODEL        # Default: gpt-4
@@ -300,6 +321,7 @@ LLM_MAX_TOKENS   # Default: 2000
 PORT             # Default: 3000
 ```
 
+Configuration file: `api/.env` (copy from `api/.env.example`)
 All have sensible defaults; project works without `.env` file.
 
 ## Implementation Status Detail
@@ -350,15 +372,15 @@ All have sensible defaults; project works without `.env` file.
 ## Common Patterns and Idioms
 
 ### Adding a New Tool
-1. Create `/src/tools/new-tool.ts`
+1. Create `/api/src/tools/new-tool.ts`
 2. Extend `BaseTool`
 3. Implement required methods
-4. Create `/tests/tools/new-tool.test.ts`
-5. Export from `/src/tools/index.ts`
+4. Create `/api/tests/tools/new-tool.test.ts`
+5. Export from `/api/src/tools/index.ts`
 6. Register in test scripts if needed
 
 ### Adding a New Capability
-1. Create `/src/capabilities/new-capability.ts`
+1. Create `/api/src/capabilities/new-capability.ts`
 2. Extend `BaseCapability`
 3. Accept `LLMProvider` in constructor
 4. Use `collectStreamContent()` or `collectStreamWithToolCalls()`
@@ -367,7 +389,7 @@ All have sensible defaults; project works without `.env` file.
 7. Export from index
 
 ### Adding a New Pattern
-1. Create `/src/patterns/new-pattern.ts`
+1. Create `/api/src/patterns/new-pattern.ts`
 2. Extend `BasePattern`
 3. Accept `LLMProvider` in constructor
 4. Instantiate needed capabilities with provider
@@ -396,6 +418,8 @@ for await (const event of orchestrator.executePattern('react', input, options)) 
   // event.eventType: 'start' | 'step' | 'complete' | 'error' | 'visualization'
 }
 ```
+
+Note: All imports are relative to `api/src/` when working in the API workspace.
 
 **Event Types:**
 - `start` - Execution begins

@@ -8,54 +8,75 @@ This project demonstrates core agent capabilities (planning, reasoning, reflecti
 
 **Tech Stack**: Node.js / TypeScript (core + API), Next.js / React / TypeScript (UI)
 
-## Quick Start
+## Quick Start (full product)
+
+1) Install all dependencies (from root)
+```bash
+npm install
+```
+
+2) Start API server (mock provider, port 3000)
+```bash
+npm run dev:api
+```
+
+3) In a new terminal, start UI (default port 3001)
+```bash
+npm run dev:ui
+```
+
+4) Open http://localhost:3001 and run the `react` pattern with any prompt (e.g., "Calculate 2+2").
+
+5) CLI alternative (skip UI) - test orchestrator directly:
+```bash
+cd api
+npm run test:orchestrator -- react "Calculate 2+2"
+```
+
+## Setup and Operations
 
 ### Prerequisites
 - Node.js 18+
 - npm or yarn
-- Python 3.8+ (optional, for Python execution tool)
+- Python 3.8+ (optional, for future Python execution tool)
 
-### Installation (API + core)
+### Configure (optional)
 ```bash
-# Install dependencies
-npm install
-
-# (Optional) Copy environment configuration to customize settings
-cp .env.example .env
-# Edit .env with your preferences
-
-# Build the project
-npm run build
-
-# Run tests (Jest)
-npm test
+cp api/.env.example api/.env
+# Edit values if you want OpenAI, different workspace dir, or API port
 ```
 
-### Run API server (mock provider)
+### Run API (mock by default)
 ```bash
-npm run start:api -- --port=3000 --provider=mock
+npm run dev:api
+# For OpenAI, set LLM_PROVIDER=openai and LLM_API_KEY in api/.env, then restart
 ```
 
-## UI (Next.js)
-
-The UI lives in `/ui` and streams ExecutionEvents over SSE.
-
-Setup and run:
-
+### Run UI
 ```bash
-cd ui
-npm install
-npm run dev            # starts Next.js (set PORT to change)
-# API base can be overridden with NEXT_PUBLIC_API_BASE_URL (default http://localhost:3000)
+npm run dev:ui
+# Change PORT via environment: PORT=3002 npm run dev:ui
+# Point to different API: NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 npm run dev:ui
 ```
 
-Tests (UI via Vitest):
-
+### Tests
 ```bash
-cd ui
-npm test          # vitest run (non-watch)
-npm run test:watch
+# All tests (both workspaces)
+npm run test:all
+
+# API only (Jest)
+npm run test:api
+
+# UI only (Vitest)
+npm run test:ui
 ```
+
+### Troubleshooting
+- Ports in use: API runs on port 3000 by default (edit `api/.env` to change PORT); UI on 3001 (override with `PORT=3002 npm run dev:ui`).
+- CORS/errors hitting API: verify UI `NEXT_PUBLIC_API_BASE_URL` matches the running API origin (default http://localhost:3000).
+- OpenAI usage: set `LLM_PROVIDER=openai` and `LLM_API_KEY` in `api/.env`, then restart API with `npm run dev:api`.
+- Env not picked up: restart the API process after editing `api/.env`.
+- Workspace install issues: delete `node_modules`, `package-lock.json` at root and in workspaces, then `npm install` from root.
 
 ## Quick Example
 
@@ -141,25 +162,37 @@ PORT=3000
 ## Project Structure
 
 ```
-/src
-  /capabilities      # Individual agent capabilities
-  /patterns          # Composed agentic patterns
-  /tools             # External tool implementations
-    base.ts          # Base tool class and utilities
-    calculator.ts    # Mathematical calculations
-    file-system.ts   # File read/write/list operations
-  /llm               # LLM provider abstractions
-  /orchestrator      # Main execution engine
-  /api               # HTTP API layer
-  /ui                # User interface
-  config.ts          # Configuration management
-  types.ts           # TypeScript type definitions
+/api                   # Backend workspace (API + core)
+  /src
+    /capabilities      # Individual agent capabilities
+    /patterns          # Composed agentic patterns
+    /tools             # External tool implementations
+      base.ts          # Base tool class and utilities
+      calculator.ts    # Mathematical calculations
+      file-system.ts   # File read/write/list operations
+    /llm               # LLM provider abstractions
+    /orchestrator      # Main execution engine
+    /api               # HTTP API layer
+    config.ts          # Configuration management
+    types.ts           # TypeScript type definitions
+  /tests               # Test files mirror src structure
+  /scripts             # CLI test utilities
+  package.json         # API dependencies and scripts
+  tsconfig.json
+  jest.config.js
+  .env / .env.example
 
-/scripts
-  test-tool.ts       # CLI for testing individual tools
+/ui                    # Frontend workspace (Next.js)
+  /app                 # Next.js app router pages
+  /lib                 # UI utilities (SSE client, etc.)
+  /__tests__           # Vitest tests
+  package.json         # UI dependencies and scripts
+  tsconfig.json
+  vitest.config.ts
 
-/tests
-  # Test files mirror src structure
+/docs                  # Documentation
+/workspace             # Sandboxed directory for file operations
+package.json           # Workspace root config
 ```
 
 ## Available Tools
