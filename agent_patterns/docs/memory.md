@@ -3,7 +3,7 @@
 ## Project Overview
 TypeScript/Node.js project exploring agentic AI patterns through composable capabilities. Focus on learning and experimentation, not production-grade implementation.
 
-## Current Status (Step 7/13 Complete)
+## Current Status (Step 8/13 Complete)
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, FileSystem)
 - ✅ LLM providers (Mock, OpenAI)
@@ -11,9 +11,9 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
 - ✅ Patterns (ReAct)
 - ✅ Orchestrator (AgentOrchestrator)
 - ✅ API Layer (Express + SSE)
-- 🚧 Next: UI Layer (Next.js)
+- ✅ UI Layer (Next.js chat, SSE streaming)
 
-**Tests:** 170 passing across all modules
+**Tests:** 170 passing across core/API + 2 passing in UI (Vitest)
 
 ## Code Organization
 
@@ -78,6 +78,8 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
   scenario.md       # Use cases and tools
   current_state.md  # Implementation progress
   memory.md         # This file
+
+/ui                 # Next.js UI (SSE chat client)
 
 /workspace/          # Sandboxed directory for file operations
 ```
@@ -262,9 +264,13 @@ LLMConfig { provider, model, temperature?, maxTokens?, stream?, apiKey? }
 
 ### Running Tests
 ```bash
-npm test                    # All tests
-npm test -- <filename>      # Specific test file
-npm run test:watch          # Watch mode
+npm test                    # Core/API tests (Jest)
+npm test -- <filename>      # Specific test file (Jest)
+npm run test:watch          # Watch mode (Jest)
+
+# UI (Next.js) tests
+cd ui && npm test           # Vitest run (non-watch)
+cd ui && npm run test:watch # Vitest watch
 
 # Manual testing
 npm run test:tool -- calculator "2+2"
@@ -279,7 +285,7 @@ npm run start:api  # Start API server (mock)
 - `describe()` blocks organize by feature area
 - Each test is self-contained
 - Mock providers reset between tests
-- All 170 tests pass
+- All 170 core/API tests pass; UI has 2 passing Vitest specs
 
 ## Configuration Management
 
@@ -330,6 +336,9 @@ All have sensible defaults; project works without `.env` file.
   - Streaming ExecutionEvents
   - Options: maxSteps, timeout, debug, visualizations
   - Error handling and recovery
+
+**UI (1/1):**
+- ✅ Next.js chat UI with SSE streaming, pattern selector, chat bubbles, and live event log (2 Vitest tests)
 
 ### Next Steps (in order)
 1. ~~**Orchestrator**~~ ✅ COMPLETE - Entry point managing pattern execution

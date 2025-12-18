@@ -6,22 +6,17 @@ A collection of simple, illustrative samples demonstrating different agentic AI 
 
 This project demonstrates core agent capabilities (planning, reasoning, reflection, tool use, etc.) and how to compose them into standard agentic patterns like ReAct, Plan-and-Execute, Reflection, Tree-of-Thoughts, and more.
 
-**Tech Stack**: Node.js / TypeScript
+**Tech Stack**: Node.js / TypeScript (core + API), Next.js / React / TypeScript (UI)
 
 ## Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - Python 3.8+ (optional, for Python execution tool)
 
-### Installation
-
+### Installation (API + core)
 ```bash
-# Clone or navigate to the project
-cd agent-patterns
-
 # Install dependencies
 npm install
 
@@ -32,8 +27,34 @@ cp .env.example .env
 # Build the project
 npm run build
 
-# Run tests
+# Run tests (Jest)
 npm test
+```
+
+### Run API server (mock provider)
+```bash
+npm run start:api -- --port=3000 --provider=mock
+```
+
+## UI (Next.js)
+
+The UI lives in `/ui` and streams ExecutionEvents over SSE.
+
+Setup and run:
+
+```bash
+cd ui
+npm install
+npm run dev            # starts Next.js (set PORT to change)
+# API base can be overridden with NEXT_PUBLIC_API_BASE_URL (default http://localhost:3000)
+```
+
+Tests (UI via Vitest):
+
+```bash
+cd ui
+npm test          # vitest run (non-watch)
+npm run test:watch
 ```
 
 ## Quick Example

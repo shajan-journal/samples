@@ -269,20 +269,19 @@
 ---
 
 ### 8. UI - Main View
-**Status**: Not Started
+**Status**: ✅ Completed
 
 **Tasks:**
-- Set up Next.js project
-- Create chat interface component
-- Implement SSE client for streaming
-- Add pattern selector
-- Create message display components
+- ✅ Set up Next.js project (app router, TS, styling)
+- ✅ Create chat interface component with streaming timeline
+- ✅ Implement SSE client for streaming events
+- ✅ Add pattern selector wired to `/api/patterns`
+- ✅ Create message display + event log components
 
 **Testing:**
-- Component tests with React Testing Library
-- Test SSE connection with mock server
-- Test message rendering
-- Manual testing: Run UI with mock API
+- ✅ Component tests with React Testing Library (mocked SSE + fetch)
+- ✅ Message and log rendering verified
+- ✅ Manual testing via `npm run dev` against mock API
 
 ---
 
