@@ -24,7 +24,7 @@ import { PatternRegistry } from '../patterns/base';
  */
 export class AgentOrchestrator {
   private llmProvider: LLMProvider;
-  private tools: Tool[];
+  public readonly tools: Tool[];  // Made public for API access
   private defaultConfig: LLMConfig;
 
   constructor(

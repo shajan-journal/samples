@@ -11,7 +11,7 @@ Three-layer architecture with clear separation between UI, API, and core agent l
 └─────────────────┬───────────────────────────┘
                   │ HTTP/WebSocket
 ┌─────────────────▼───────────────────────────┐
-│            API Layer (Planned)              │
+│         API Layer (Implemented)             │
 │  (REST endpoints + SSE for streaming)       │
 └─────────────────┬───────────────────────────┘
                   │ Function calls
@@ -25,7 +25,7 @@ Three-layer architecture with clear separation between UI, API, and core agent l
 
 **Implementation Status:**
 - ✅ Core Agent Layer: Tools, LLM Providers, Capabilities, Patterns, Orchestrator
-- 🚧 API Layer: Express server with SSE streaming
+- ✅ API Layer: Express server with SSE streaming
 - 🚧 UI Layer: Next.js interface with debug views
 
 ## Core Components

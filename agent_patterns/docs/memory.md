@@ -3,16 +3,17 @@
 ## Project Overview
 TypeScript/Node.js project exploring agentic AI patterns through composable capabilities. Focus on learning and experimentation, not production-grade implementation.
 
-## Current Status (Step 6/13 Complete)
+## Current Status (Step 7/13 Complete)
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, FileSystem)
 - ✅ LLM providers (Mock, OpenAI)
 - ✅ Capabilities (Reasoning, ToolUse)
 - ✅ Patterns (ReAct)
 - ✅ Orchestrator (AgentOrchestrator)
-- 🚧 Next: API Layer (Express + SSE)
+- ✅ API Layer (Express + SSE)
+- 🚧 Next: UI Layer (Next.js)
 
-**Tests:** 160 passing across all modules
+**Tests:** 170 passing across all modules
 
 ## Code Organization
 
@@ -46,6 +47,12 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
     orchestrator.ts  # AgentOrchestrator class
     index.ts         # Exports
     
+  /api/              # HTTP API layer
+    server.ts        # Express server setup
+    routes.ts        # API endpoints
+    middleware.ts    # Logging and error handling
+    index.ts         # Exports
+    
   types.ts           # All TypeScript interfaces
   config.ts          # Environment variable management
 
@@ -55,6 +62,7 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
   test-capability.ts # Test capabilities
   test-pattern.ts    # Test patterns
   test-orchestrator.ts # Test orchestrator
+  start-api.ts       # Start API server
   test-pattern.ts    # Test patterns
 
 /tests/              # Mirrors /src structure
@@ -264,13 +272,14 @@ npm run test:llm -- openai "Hello"
 npm run test:capability -- reasoning "What is 2+2?"
 npm run test:pattern -- react "Calculate factorial of 5"
 npm run test:orchestrator -- react "What is sqrt(144)?" --debug
+npm run start:api  # Start API server (mock)
 ```
 
 ### Test Organization
 - `describe()` blocks organize by feature area
 - Each test is self-contained
 - Mock providers reset between tests
-- All 160 tests pass
+- All 170 tests pass
 
 ## Configuration Management
 
@@ -324,7 +333,7 @@ All have sensible defaults; project works without `.env` file.
 
 ### Next Steps (in order)
 1. ~~**Orchestrator**~~ ✅ COMPLETE - Entry point managing pattern execution
-2. **API Layer** - Express server with SSE streaming
+2. ~~**API Layer**~~ ✅ COMPLETE - Express server with SSE streaming
 3. **UI Layer** - Next.js chat interface
 4. **More Patterns** - Plan-Execute, Reflection, etc.
 5. **More Capabilities** - Planning, Critique, etc.

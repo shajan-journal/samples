@@ -218,7 +218,8 @@ npm run test:orchestrator -- <pattern> "<input>" [--provider=openai] [--debug]
 - Capability tests (22 tests)
 - Pattern tests (12 tests)
 - Orchestrator tests (17 tests)
-- **Total: 160 tests, all passing ✅**
+- API server tests (10 tests)
+- **Total: 170 tests, all passing ✅**
 
 ## Examples
 
@@ -427,6 +428,53 @@ Execution completed
 ================================================================================
 ```
 
+### Starting the API Server
+
+Run the HTTP API server to access agent patterns via REST endpoints:
+
+```bash
+# Start with mock provider (no API key needed)
+npm run start:api
+
+# Start with OpenAI provider
+npm run start:api -- --provider=openai
+
+# Use custom port
+npm run start:api -- --port=8080
+```
+
+**Available Endpoints:**
+
+```bash
+# List available patterns
+curl http://localhost:3000/api/patterns
+
+# List available capabilities
+curl http://localhost:3000/api/capabilities
+
+# List available tools
+curl http://localhost:3000/api/tools
+
+# Execute a pattern (with SSE streaming)
+curl -X POST http://localhost:3000/api/execute \
+  -H "Content-Type: application/json" \
+  -d '{"pattern": "react", "input": "Calculate 2+2"}'
+```
+
+**Example Response (SSE Stream):**
+```
+data: {"timestamp":1702915407000,"eventType":"start","data":{"pattern":"react","input":"Calculate 2+2"}}
+
+data: {"timestamp":1702915407001,"eventType":"step","data":{"type":"capability","capability":"reasoning","content":"Reasoning about the problem..."}}
+
+data: {"timestamp":1702915407002,"eventType":"step","data":{"type":"tool_call","tool":"calculator","content":"Calling tool: calculator({\"expression\":\"2+2\"})"}}
+
+data: {"timestamp":1702915407003,"eventType":"complete","data":{"status":"success","duration":16}}
+
+event: done
+data: {}
+```
+
 ## Development
 
 ### Building
@@ -500,8 +548,9 @@ See [current_state.md](current_state.md) for the current implementation progress
 - ✅ Agent capabilities (Reasoning, ToolUse)
 - ✅ Agentic patterns (ReAct)
 - ✅ Orchestrator
-- 🚧 API Layer (next)
-- 🚧 UI Layer
+- ✅ API Layer (Express + SSE)
+- 🚧 UI Layer (next)
+- 🚧 Code Execution Tools
 
 ## Documentation
 
