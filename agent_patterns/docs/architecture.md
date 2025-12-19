@@ -506,3 +506,137 @@ Loaded from `.env` or environment variables, with sensible defaults.
 - Patterns handle capability/tool errors and decide whether to retry or fail
 - API layer catches uncaught errors and returns proper HTTP status
 - Streaming events include error type for UI to display appropriately
+
+---
+
+## Visualization Pipeline (Planned - Step 12)
+
+The system will support generating data visualizations from Python code execution, completing the core data analysis scenario.
+
+### Architecture Flow
+
+```
+User Prompt: "Create a chart showing monthly revenue"
+    ↓
+Agent generates Python code
+    ↓
+PythonExecutionTool executes code
+    ↓
+Python script creates:
+  - revenue.csv (data file)
+  - visualization_manifest.json (configuration)
+    ↓
+PythonExecutionTool post-execution:
+  1. WorkspaceManager scans for generated files
+  2. Detects visualization_manifest.json
+  3. FileParser parses CSV/JSON data files
+  4. VisualizationValidator validates manifest schema
+    ↓
+Tool returns ToolResult with:
+  - stdout/stderr (execution logs)
+  - files[] (file metadata)
+  - visualizations (parsed manifest + data)
+    ↓
+Orchestrator emits ExecutionEvent with visualizations
+    ↓
+API streams event via Server-Sent Events
+    ↓
+UI VisualizationRenderer displays charts
+```
+
+### New Utility Modules
+
+**FileParser** (`utils/file-parser.ts`)
+- Parse CSV files using `csv-parse` library
+- Parse JSON files with validation
+- Detect file types from extensions
+- Handle encoding and malformed data gracefully
+
+**VisualizationValidator** (`utils/visualization-validator.ts`)
+- Validate manifest JSON schema
+- Check referenced data files exist
+- Verify column references are valid
+- Type-specific configuration validation
+
+**WorkspaceManager** (`utils/workspace-manager.ts`)
+- Centralized file operations within workspace
+- Path resolution with security checks
+- File scanning and metadata extraction
+- Temporary file cleanup
+
+### UI Components
+
+```
+/ui/lib/visualizations/
+  VisualizationRenderer.tsx  # Main dispatcher component
+  Table.tsx                  # Tabular data display
+  LineChart.tsx              # Time series and trends
+  BarChart.tsx               # Category comparisons
+  ScatterChart.tsx           # Correlation analysis
+  PieChart.tsx               # Proportion display
+```
+
+**Visualization Types:**
+- **Table**: Tabular data with columns and rows
+- **Line Chart**: Trends over time or continuous variables
+- **Bar Chart**: Comparing values across categories
+- **Scatter Plot**: Analyzing correlations between variables
+- **Pie Chart**: Showing proportions of a whole
+
+### Manifest Format
+
+```json
+{
+  "version": "1.0",
+  "outputs": [
+    {
+      "id": "revenue_chart",
+      "type": "bar_chart",
+      "title": "Monthly Revenue",
+      "dataFile": "revenue.csv",
+      "config": {
+        "xColumn": "month",
+        "yColumn": "revenue",
+        "xLabel": "Month",
+        "yLabel": "Revenue ($)"
+      }
+    }
+  ]
+}
+```
+
+### Python Code Example
+
+```python
+import pandas as pd
+import json
+
+# Create and save data
+df = pd.DataFrame({
+    'month': ['Jan', 'Feb', 'Mar'],
+    'revenue': [10000, 12000, 15000]
+})
+df.to_csv('revenue.csv', index=False)
+
+# Create visualization manifest
+manifest = {
+    "version": "1.0",
+    "outputs": [{
+        "id": "revenue_chart",
+        "type": "bar_chart",
+        "title": "Monthly Revenue",
+        "dataFile": "revenue.csv",
+        "config": {
+            "xColumn": "month",
+            "yColumn": "revenue"
+        }
+    }]
+}
+
+with open('visualization_manifest.json', 'w') as f:
+    json.dump(manifest, f)
+
+print("Visualization created")
+```
+
+See [next_step.md](next_step.md) for the detailed implementation plan with phases, tasks, testing strategy, and timeline.

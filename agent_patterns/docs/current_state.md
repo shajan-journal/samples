@@ -644,3 +644,83 @@
 **Why This Order**
 - Self-correcting patterns immediately leverage the completed `ValidationCapability` and iteration utilities, delivering visible capability gains.
 - WebFetch + Visualization unlock the scenario breadth (data → analysis → charts) and can follow once patterns are in place.
+
+---
+
+## Update: Step 11 Completed ✅
+
+**Date:** December 19, 2025
+
+Step 11 (Self-Correcting Patterns) has been fully completed:
+- ✅ IterativeRefinementPattern implemented and tested (2 tests)
+- ✅ PlanAndValidatePattern implemented and tested (7 tests)
+- ✅ ValidationCapability fully functional (22 tests)
+- ✅ All patterns registered with orchestrator and available via API
+
+**Updated Status:**
+- **Completed Steps**: 11/13
+- **Test Results**: 311 tests passing (17 test suites)
+- **Next Phase**: Step 12 - Visualization Support
+
+---
+
+## Step 12: Visualization Support (📋 Planning Complete)
+
+**Status**: Ready for Implementation
+**Start Date**: December 19, 2025
+**Estimated Completion**: 10 days (2 weeks)
+
+**Overview:**
+Implement visualization support to complete the core scenario: code generation → data analysis → visualization. This enables Python code to generate interactive charts and tables visible in the UI.
+
+**Detailed Plan:** See [next_step.md](next_step.md) for the complete implementation plan with all phases, tasks, and acceptance criteria.
+
+### Quick Summary
+
+**Phase 1: Refactoring Foundation (Days 1-5)**
+1. Create `utils/file-parser.ts` - CSV/JSON parsing utilities
+2. Create `utils/visualization-validator.ts` - Manifest validation
+3. Create `utils/workspace-manager.ts` - Centralized file operations
+4. Enhance `PythonExecutionTool` - File scanning and manifest parsing
+5. Comprehensive testing for all utilities
+
+**Phase 2: Core Implementation (Days 6-7)**
+- Update orchestrator to emit visualization events
+- Ensure API properly streams visualization data
+
+**Phase 3: UI Implementation (Days 8-9)**
+- Install `recharts` library
+- Create visualization components (Table, Line, Bar, Scatter, Pie)
+- Integrate into chat UI with SSE handling
+
+**Phase 4: Integration & Testing (Day 10)**
+- End-to-end testing
+- Manual test scenarios
+- Documentation updates
+
+**Success Criteria:**
+- ✅ All utility modules tested and working (>80% coverage)
+- ✅ PythonExecutionTool parses visualizations correctly
+- ✅ Data flows through orchestrator → API → UI without errors
+- ✅ UI renders all 5 visualization types correctly
+- ✅ Error handling graceful at each layer
+- ✅ End-to-end workflow verified with test cases
+- ✅ Documentation complete with code examples
+
+**Rationale:**
+- Completes core scenario from PRD and scenario.md
+- High demo value (interactive charts > text output)
+- Clear scope with pre-defined manifest format
+- Self-contained feature using existing patterns
+- Unlocks all data analysis use cases described in docs
+
+---
+
+## Step 13: Future Enhancements (Planned)
+
+After visualization support, the following enhancements are planned:
+
+1. **WebFetch Tool** - Download data from URLs for real-world scenarios
+2. **Additional Capabilities** - Planning, Reflection, Memory
+3. **Additional Patterns** - Reflection, Chain-of-Thought, Tree-of-Thoughts, Ensemble
+4. **Advanced Visualization** - Export, interactivity, custom themes, responsive design
