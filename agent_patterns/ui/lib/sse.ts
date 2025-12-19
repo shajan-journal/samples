@@ -9,6 +9,7 @@ export type ExecuteOptions = {
   pattern: string;
   input: string;
   options?: Record<string, any>;
+  messages?: Array<{ role: string; content: string }>;  // Conversation history
   apiBase?: string;
 };
 
@@ -17,12 +18,12 @@ const decoder = new TextDecoder();
 /**
  * Stream execution events from the API via SSE using fetch + ReadableStream.
  */
-export async function* streamExecution({ pattern, input, options, apiBase }: ExecuteOptions) {
+export async function* streamExecution({ pattern, input, options, messages, apiBase }: ExecuteOptions) {
   const base = apiBase || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
   const response = await fetch(`${base}/api/execute`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pattern, input, options })
+    body: JSON.stringify({ pattern, input, options, messages })
   });
 
   if (!response.ok || !response.body) {

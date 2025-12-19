@@ -55,8 +55,12 @@ export class PythonExecutionTool extends BaseTool {
     const tempFile = path.join(tempDir, `python_exec_${Date.now()}.py`);
 
     try {
+      // Wrap code to capture expression result (similar to Node's vm behavior)
+      // If the code is a single expression, wrap it in print()
+      const wrappedCode = this.wrapCodeForOutput(code);
+      
       // Write code to temp file
-      fs.writeFileSync(tempFile, code, 'utf-8');
+      fs.writeFileSync(tempFile, wrappedCode, 'utf-8');
 
       // Execute Python with timeout
       const result = await this.executePython(tempFile, timeout);
@@ -79,6 +83,38 @@ export class PythonExecutionTool extends BaseTool {
 
       return this.error(`Failed to execute Python: ${error.message}`);
     }
+  }
+
+  /**
+   * Wrap code to ensure output is captured.
+   * If the code is a simple expression (no statements), wrap it in print().
+   * This makes Python behave similar to Node's vm which returns expression results.
+   */
+  private wrapCodeForOutput(code: string): string {
+    const trimmedCode = code.trim();
+    
+    // If code already has print() or return, leave as-is
+    if (trimmedCode.includes('print(') || trimmedCode.includes('return ')) {
+      return code;
+    }
+    
+    // If code has newlines, it's likely multiple statements
+    if (trimmedCode.includes('\n')) {
+      return code;
+    }
+    
+    // Try to detect if it's a simple expression
+    // Check if it starts with a statement keyword
+    const statementKeywords = ['if ', 'for ', 'while ', 'def ', 'class ', 'import ', 'from ', 'with ', 'try ', 'except ', 'raise ', 'assert '];
+    const hasStatementKeyword = statementKeywords.some(keyword => trimmedCode.startsWith(keyword));
+    
+    if (hasStatementKeyword) {
+      return code;
+    }
+    
+    // If it looks like an expression (starts with a literal, variable, or call)
+    // wrap it in print() to capture the result
+    return `print(${code})`;
   }
 
   private executePython(scriptPath: string, timeout: number): Promise<ToolResult> {

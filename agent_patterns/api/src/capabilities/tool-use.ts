@@ -43,12 +43,14 @@ export class ToolUseCapability extends BaseCapability {
       console.log('[DEBUG] Tool-use LLM output:', content);
       console.log('[DEBUG] Tool calls:', JSON.stringify(toolCalls, null, 2));
 
-      // Store debug info
+      // Store debug info with FULL context
       const debugInfo = {
         messagesCount: messages.length,
         rawLLMOutput: content || '(no content)',
         contentLength: content?.length || 0,
         toolCallsCount: toolCalls?.length || 0,
+        fullMessages: messages,  // Include ALL messages sent to LLM
+        toolDefinitions,  // Include tool definitions sent to LLM
       };
 
       // If no tool calls, return the content

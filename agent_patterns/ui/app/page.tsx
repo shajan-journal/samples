@@ -16,7 +16,7 @@ type Session = {
   messageCount: number;
 };
 
-const defaultInput = 'Calculate 2+2';
+const defaultInput = '';
 const defaultPatterns = [{ name: 'react', description: 'Reason + Act pattern' }];
 
 export default function HomePage() {
@@ -24,7 +24,9 @@ export default function HomePage() {
   const [pattern, setPattern] = useState('react');
   const [input, setInput] = useState(defaultInput);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [events, setEvents] = useState<string[]>([]);
+  const [events, setEvents] = useState<ExecutionEvent[]>([]);
+  const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
+  const [showLogsPanel, setShowLogsPanel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<Session>({
@@ -85,8 +87,20 @@ export default function HomePage() {
     // Update session message count
     setSession(prev => ({ ...prev, messageCount: prev.messageCount + 1 }));
 
+    // Build conversation history (exclude thinking messages and IDs)
+    const conversationHistory = messages.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+    // Add current user message to history
+    conversationHistory.push({ role: 'user', content: input });
+
     try {
-      for await (const event of streamExecution({ pattern, input })) {
+      for await (const event of streamExecution({ 
+        pattern, 
+        input,
+        messages: conversationHistory 
+      })) {
         applyEvent(runId, event);
       }
     } catch (err) {
@@ -103,152 +117,260 @@ export default function HomePage() {
   }
 
   function applyEvent(runId: string, event: ExecutionEvent) {
-    const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-    const { eventType, data } = event;
-    
     // Skip unknown or empty events
-    if (!eventType || !data) return;
+    if (!event.eventType || !event.data) return;
     
-    const line = formatEventLine(time, eventType, data);
-
-    setEvents((prev) => [...prev, line]);
+    // Store the full event object
+    setEvents((prev) => [...prev, event]);
 
     // Show final answer in chat when synthesis produces answer
-    if (eventType === 'step' && data.type === 'answer') {
+    if (event.eventType === 'step' && event.data.type === 'answer') {
       // Remove thinking indicator and add actual answer
       setMessages((prev) => [
         ...prev.filter(m => !m.id.includes('-thinking')),
         {
           id: `${runId}-answer`,
           role: 'assistant',
-          content: data.content
+          content: event.data.content
         }
       ]);
     }
 
-    if (eventType === 'error') {
+    if (event.eventType === 'error') {
       setMessages((prev) => [
         ...prev,
-        { id: `${runId}-err`, role: 'assistant', content: `Error: ${data.error || 'Unknown error'}` }
+        { id: `${runId}-err`, role: 'assistant', content: `Error: ${event.data.error || 'Unknown error'}` }
       ]);
     }
   }
 
+  function downloadLogs() {
+    const logData = JSON.stringify(events, null, 2);
+    const blob = new Blob([logData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agent-logs-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main>
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', gap: 12 }}>
-        <header style={{ padding: '12px 0', borderBottom: '1px solid rgba(226, 232, 240, 0.1)' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ margin: 0, fontSize: '20px' }}>Agent Patterns</h1>
-              <p className="small" style={{ margin: '4px 0 0' }}>
-                Pattern: <strong>{pattern}</strong>
-                {messages.length > 0 && (
-                  <span style={{ marginLeft: '12px', opacity: 0.6 }}>
-                    • {session.messageCount} {session.messageCount === 1 ? 'turn' : 'turns'}
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="row" style={{ gap: '8px' }}>
-              {messages.length > 0 && (
-                <button 
-                  onClick={clearChat} 
-                  disabled={loading}
-                  className="secondary-button"
-                  title="Start a new conversation"
-                >
-                  New Chat
-                </button>
-              )}
-              <select 
-                value={pattern} 
-                onChange={(e) => setPattern(e.target.value)} 
-                disabled={loading} 
-                style={{ width: 'auto', fontSize: '13px', padding: '6px 10px' }}
-              >
-                {patterns.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </header>
-
-        <div className="chat-container">
-          <div className="chat-messages">
-            {messages.length === 0 ? (
-              <div className="empty-state">
-                <p>Ask a question to get started</p>
+      <div style={{ display: 'flex', height: 'calc(100vh - 32px)', gap: 12 }}>
+        {/* Main chat area */}
+        <div className="card" style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          flex: showLogsPanel ? '0 0 50%' : '1',
+          transition: 'flex 0.3s ease'
+        }}>
+          <header style={{ padding: '12px 0', borderBottom: '1px solid rgba(226, 232, 240, 0.1)' }}>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <h1 style={{ margin: 0, fontSize: '20px' }}>Agent Patterns</h1>
+                <p className="small" style={{ margin: '4px 0 0' }}>
+                  Pattern: <strong>{pattern}</strong>
+                  {messages.length > 0 && (
+                    <span style={{ marginLeft: '12px', opacity: 0.6 }}>
+                      • {session.messageCount} {session.messageCount === 1 ? 'turn' : 'turns'}
+                    </span>
+                  )}
+                </p>
               </div>
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className={`message ${msg.role}`}>
-                  <div className="message-content">
-                    {msg.content === 'Thinking...' ? (
-                      <span className="thinking-dots">{msg.content}</span>
-                    ) : msg.content}
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={chatEndRef} />
-          </div>
-
-          <form onSubmit={handleSubmit} className="chat-input-form">
-            {error && <div className="error-message">{error}</div>}
-            <div className="input-wrapper">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-                placeholder="Ask a question..."
-                disabled={loading}
-                rows={1}
-              />
-              <button type="submit" disabled={loading || !input.trim()} className="send-button">
-                {loading ? '⏳' : '↑'}
-              </button>
+              <div className="row" style={{ gap: '8px' }}>
+                {events.length > 0 && (
+                  <button 
+                    onClick={() => setShowLogsPanel(!showLogsPanel)}
+                    className="secondary-button"
+                    title="Toggle logs panel"
+                  >
+                    {showLogsPanel ? 'Hide Logs' : `Show Logs (${events.length})`}
+                  </button>
+                )}
+                {messages.length > 0 && (
+                  <button 
+                    onClick={clearChat} 
+                    disabled={loading}
+                    className="secondary-button"
+                    title="Start a new conversation"
+                  >
+                    New Chat
+                  </button>
+                )}
+                <select 
+                  value={pattern} 
+                  onChange={(e) => setPattern(e.target.value)} 
+                  disabled={loading} 
+                  style={{ width: 'auto', fontSize: '13px', padding: '6px 10px' }}
+                >
+                  {patterns.map((p) => (
+                    <option key={p.name} value={p.name}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </form>
+          </header>
+
+          <div className="chat-container">
+            <div className="chat-messages">
+              {messages.length === 0 ? (
+                <div className="empty-state">
+                  <p>Ask a question to get started</p>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div key={msg.id} className={`message ${msg.role}`}>
+                    <div className="message-content">
+                      {msg.content === 'Thinking...' ? (
+                        <span className="thinking-dots">{msg.content}</span>
+                      ) : msg.content}
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <form onSubmit={handleSubmit} className="chat-input-form">
+              {error && <div className="error-message">{error}</div>}
+              <div className="input-wrapper">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                  placeholder="Ask a question..."
+                  disabled={loading}
+                  rows={1}
+                />
+                <button type="submit" disabled={loading || !input.trim()} className="send-button">
+                  {loading ? '⏳' : '↑'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        {events.length > 0 && (
-          <details className="events-details">
-            <summary className="small">Live Events ({events.length})</summary>
-            <div className="log" style={{ maxHeight: '200px', marginTop: '8px' }}>
-              {events.map((line, idx) => <div key={idx}>{line}</div>)}
+        {/* Logs panel */}
+        {showLogsPanel && (
+          <div className="card" style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            flex: '0 0 50%',
+            maxHeight: 'calc(100vh - 32px)',
+            overflow: 'hidden'
+          }}>
+            <header style={{ padding: '12px 0', borderBottom: '1px solid rgba(226, 232, 240, 0.1)', marginBottom: '12px' }}>
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ margin: 0, fontSize: '16px' }}>Execution Logs ({events.length})</h2>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={downloadLogs}
+                    className="secondary-button"
+                    style={{ fontSize: '12px', padding: '4px 8px' }}
+                    title="Download logs as JSON"
+                  >
+                    ⬇ Download
+                  </button>
+                  <button 
+                    onClick={() => setExpandedEvents(new Set())}
+                    className="secondary-button"
+                    style={{ fontSize: '12px', padding: '4px 8px' }}
+                  >
+                    Collapse All
+                  </button>
+                </div>
+              </div>
+            </header>
+            <div style={{ flex: 1, overflowY: 'auto', fontSize: '12px', fontFamily: 'monospace' }}>
+              {events.map((event, idx) => {
+                const isExpanded = expandedEvents.has(idx);
+                const time = event.timestamp ? new Date(event.timestamp).toLocaleTimeString() : '';
+                const summary = formatEventSummary(event);
+                
+                return (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      borderBottom: '1px solid rgba(226, 232, 240, 0.05)',
+                      padding: '8px',
+                      backgroundColor: isExpanded ? 'rgba(226, 232, 240, 0.03)' : 'transparent'
+                    }}
+                  >
+                    <div 
+                      style={{ 
+                        whiteSpace: isExpanded ? 'normal' : 'nowrap',
+                        overflow: isExpanded ? 'visible' : 'hidden',
+                        textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        const newExpanded = new Set(expandedEvents);
+                        if (isExpanded) {
+                          newExpanded.delete(idx);
+                        } else {
+                          newExpanded.add(idx);
+                        }
+                        setExpandedEvents(newExpanded);
+                      }}
+                    >
+                      <span style={{ opacity: 0.5 }}>[{time}]</span> {summary}
+                    </div>
+                    {isExpanded && (
+                      <pre style={{ 
+                        marginTop: '8px',
+                        padding: '8px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                        borderRadius: '4px',
+                        overflow: 'auto',
+                        fontSize: '11px',
+                        lineHeight: '1.4',
+                        cursor: 'text',
+                        userSelect: 'text'
+                      }}>
+                        {JSON.stringify(event, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </details>
+          </div>
         )}
       </div>
     </main>
   );
 }
 
-function formatEventLine(time: string, eventType: ExecutionEvent['eventType'], data: any) {
+function formatEventSummary(event: ExecutionEvent): string {
+  const { eventType, data } = event;
+  
   switch (eventType) {
     case 'start':
-      return `[${time}] START pattern=${data.pattern} input="${data.input}"`;
+      return `▶ START pattern=${data.pattern} input="${data.input?.substring(0, 50)}${data.input?.length > 50 ? '...' : ''}"`;
     case 'step':
-      const typeLabel = data.type && data.type !== 'info' ? `${data.type.toUpperCase()} ` : '';
-      return `[${time}] ${typeLabel}${data.capability ? `cap=${data.capability} ` : ''}${data.tool ? `tool=${data.tool} ` : ''}${data.content ?? ''}`.trim();
+      const typeLabel = data.type && data.type !== 'info' ? `[${data.type.toUpperCase()}] ` : '';
+      const capLabel = data.capability ? `cap=${data.capability} ` : '';
+      const toolLabel = data.tool ? `tool=${data.tool} ` : '';
+      const content = data.content?.substring(0, 100) ?? '';
+      return `${typeLabel}${capLabel}${toolLabel}${content}`.trim();
     case 'complete':
-      return `[${time}] COMPLETE status=${data.status} duration=${data.duration}ms`;
+      return `✓ COMPLETE status=${data.status} duration=${data.duration}ms`;
     case 'error':
-      return `[${time}] ❌ ERROR ${data.error || ''}`;
+      return `✗ ERROR ${data.error || ''}`;
     case 'visualization':
-      return `[${time}] VISUALIZATION data available`;
+      return `📊 VISUALIZATION data available`;
     default:
-      // Don't display unknown event types
-      return '';
+      return `${eventType}: ${JSON.stringify(data).substring(0, 100)}`;
   }
 }
 

@@ -25,7 +25,10 @@ npm run dev:api
 npm run dev:ui
 ```
 
-4) Open http://localhost:3001 and run the `react` pattern with any prompt (e.g., "Calculate 2+2").
+4) Open http://localhost:3001 and run the `react` pattern with any prompt:
+   - Try: "Calculate 2+2" (uses calculator tool)
+   - Try: "Reverse the string hello" (uses code execution)
+   - Multi-turn: Continue the conversation with follow-up questions
 
 5) CLI alternative (skip UI) - test orchestrator directly:
 ```bash
@@ -38,7 +41,7 @@ npm run test:orchestrator -- react "Calculate 2+2"
 ### Prerequisites
 - Node.js 18+ (for running the project and NodeExecutionTool)
 - npm or yarn
-- Python 3.8+ (required for PythonExecutionTool)
+- Python 3.8+ (required for PythonExecutionTool - automatically detects and wraps expressions)
 
 **Install Node.js:**
 - macOS: `brew install node` or download from [nodejs.org](https://nodejs.org/)
@@ -79,6 +82,7 @@ npm run test:all
 npm run test:api
 - Python not found: Make sure `python3` command works in your terminal. On some systems, you may need to create a symlink or use `python` instead.
 - Code execution timeouts: Increase timeout values in tool parameters if needed for longer-running code.
+- Expression results not showing: The Python tool automatically wraps simple expressions in print() - just write the expression like "hello"[::-1]
 
 # UI only (Vitest)
 npm run test:ui

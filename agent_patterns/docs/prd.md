@@ -119,13 +119,15 @@ Fetches relevant context/knowledge first, then reasons over retrieved informatio
 - Simple, clean conversation view
 
 ### Debug UI (Separate View)
-- Real-time display of prompts sent to the model
-- Tool definitions and schemas
-- Tool call requests and responses
-- Model parameters and configuration
-- Token usage and timing information
-- Full conversation state/context
-- Toggle-able detailed logging view
+- ✅ Real-time display of prompts sent to the model (IMPLEMENTED)
+- ✅ Tool definitions and schemas (IMPLEMENTED)
+- ✅ Tool call requests and responses (IMPLEMENTED)
+- ✅ Model parameters and configuration (IMPLEMENTED)
+- ✅ Token usage and timing information (IMPLEMENTED)
+- ✅ Full conversation state/context (IMPLEMENTED)
+- ✅ Toggle-able detailed logging view with expandable events (IMPLEMENTED)
+- ✅ JSON export for debugging sessions (IMPLEMENTED)
+- ✅ Split-panel layout (50% chat, 50% logs) (IMPLEMENTED)
 
 ## Scenario
 
@@ -155,21 +157,21 @@ See [scenario.md](scenario.md) for detailed problem domain, use cases, and tools
 
 ## Implementation Status
 
-**Completed (Steps 1-6):**
+**Completed (Steps 1-9):**
 - ✅ Core types and TypeScript interfaces
 - ✅ Basic tools: Calculator, FileSystem
+- ✅ Code execution tools: NodeExecution (vm sandbox), PythonExecution (subprocess with auto-wrapping)
 - ✅ LLM providers: OpenAI, Mock
-- ✅ Capabilities: Reasoning, ToolUse
-- ✅ Patterns: ReAct
-- ✅ Orchestrator: Unified execution engine
-- ✅ 160 tests passing
+- ✅ Capabilities: Reasoning (with algorithmic detection), ToolUse (with debug metadata), Synthesis
+- ✅ Patterns: ReAct with full debug output
+- ✅ Orchestrator: Unified execution engine with multi-turn conversation support
+- ✅ API Layer: Express + SSE with conversation history
+- ✅ UI Layer: Next.js with split-panel debug views, expandable events, JSON download
+- ✅ 216 tests passing
 
-**In Progress (Steps 7-13):**
-- 🚧 API Layer (Express + SSE)
-- 🚧 UI Layer (Next.js)
-- 🚧 Code Execution Tools (Node, Python)
-- 🚧 Additional Patterns
-- 🚧 Additional Capabilities
+**In Progress (Steps 10-13):**
+- 🚧 Additional Patterns (Planning, Reflection, etc.)
+- 🚧 Additional Capabilities (Memory, JIT composition, etc.)
 - 🚧 Visualization Support
 - 🚧 Advanced Features
 

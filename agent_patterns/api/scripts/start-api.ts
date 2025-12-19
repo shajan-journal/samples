@@ -9,6 +9,8 @@ import { MockLLMProvider } from '../src/llm/mock';
 import { OpenAIProvider } from '../src/llm/openai';
 import { CalculatorTool } from '../src/tools/calculator';
 import { FileSystemTool } from '../src/tools/file-system';
+import { NodeExecutionTool } from '../src/tools/node-execution';
+import { PythonExecutionTool } from '../src/tools/python-execution';
 import { ReActPattern } from '../src/patterns/react';
 import { ReasoningCapability } from '../src/capabilities/reasoning';
 import { ToolUseCapability } from '../src/capabilities/tool-use';
@@ -72,7 +74,9 @@ export async function setupServer(config: ServerSetupConfig = {}): Promise<Serve
   // Set up tools
   const calculatorTool = new CalculatorTool();
   const fileSystemTool = new FileSystemTool();
-  const tools = [calculatorTool, fileSystemTool];
+  const nodeExecutionTool = new NodeExecutionTool();
+  const pythonExecutionTool = new PythonExecutionTool();
+  const tools = [calculatorTool, fileSystemTool, nodeExecutionTool, pythonExecutionTool];
 
   // Register capabilities (needed for /api/capabilities endpoint)
   const capabilityRegistry = new CapabilityRegistry();

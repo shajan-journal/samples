@@ -153,6 +153,7 @@ export interface ExecutionOptions {
   timeout?: number;
   debug?: boolean;
   visualizations?: boolean;
+  messages?: Message[];  // Conversation history for multi-turn interactions
 }
 
 export interface DebugInfo {

@@ -67,7 +67,7 @@ export function createRoutes(orchestrator: AgentOrchestrator): Router {
    */
   router.post('/execute', async (req: Request, res: Response) => {
     try {
-      const { pattern, input, options } = req.body;
+      const { pattern, input, options, messages } = req.body;
 
       // Validate request
       if (!pattern || typeof pattern !== 'string') {
@@ -80,6 +80,9 @@ export function createRoutes(orchestrator: AgentOrchestrator): Router {
         return;
       }
 
+      // Include messages in options if provided
+      const executionOptions = messages ? { ...options, messages } : options;
+
       // Set up SSE
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
@@ -87,7 +90,7 @@ export function createRoutes(orchestrator: AgentOrchestrator): Router {
 
       // Execute pattern and stream events
       try {
-        for await (const event of orchestrator.executePattern(pattern, input, options)) {
+        for await (const event of orchestrator.executePattern(pattern, input, executionOptions)) {
           // Send event to client
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         }

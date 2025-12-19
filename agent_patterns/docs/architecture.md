@@ -24,9 +24,9 @@ Three-layer architecture with clear separation between UI, API, and core agent l
 ```
 
 **Implementation Status:**
-- ✅ Core Agent Layer: Tools, LLM Providers, Capabilities, Patterns, Orchestrator
-- ✅ API Layer: Express server with SSE streaming
-- 🚧 UI Layer: Next.js interface with debug views
+- ✅ Core Agent Layer: Tools (4 total), LLM Providers, Capabilities (3 total), Patterns (ReAct), Orchestrator
+- ✅ API Layer: Express server with SSE streaming and multi-turn conversation support
+- ✅ UI Layer: Next.js interface with split-panel debug views, expandable events, and JSON export
 
 ## Core Components
 
@@ -56,10 +56,10 @@ interface CapabilityResult {
 
 **Implementations:**
 - 🚧 `PlanningCapability` - Breaks tasks into steps (Planned)
-- ✅ `ReasoningCapability` - Logical inference over information (IMPLEMENTED)
+- ✅ `ReasoningCapability` - Logical inference with algorithmic task detection and code execution guidance (IMPLEMENTED)
 - 🚧 `ReflectionCapability` - Analyzes past actions (Planned)
 - 🚧 `CritiqueCapability` - Evaluates outputs (Planned)
-- ✅ `ToolUseCapability` - Executes external functions (IMPLEMENTED)
+- ✅ `ToolUseCapability` - Executes external functions with full debug metadata (IMPLEMENTED)
 - 🚧 `MemoryCapability` - Context management (Planned)
 - 🚧 `JITCapability` - Dynamic pattern composition (Planned)
 - 🚧 `SummarizationCapability` - Condenses information to key points (Planned)
@@ -67,6 +67,13 @@ interface CapabilityResult {
 - 🚧 `ValidationCapability` - Checks against rules and constraints (Planned)
 - 🚧 `ComparisonCapability` - Analyzes similarities and differences (Planned)
 - ✅ `SynthesisCapability` - Combines multiple sources into unified output (IMPLEMENTED)
+
+**Reasoning Capability Enhancements:**
+- **Algorithmic detection**: Regex patterns identify tasks requiring code execution (reverse, sort, calculate, etc.)
+- **Smart prompting**: System message prepended to conversation with CRITICAL RULE about when to use code vs manual reasoning
+- **State-aware suggestions**: Only suggests code execution before tools run, not after
+- **Post-tool guidance**: Instructs LLM to synthesize results after tool execution
+- **Full debug metadata**: Captures fullMessages, systemPrompt, availableTools, detectionFlags, toolDefinitions
 
 ### 2. Tools
 External functions agents can call.
@@ -87,12 +94,19 @@ interface ToolResult {
 ```
 
 **Implementations:**
-- ✅ `NodeExecutionTool` - Execute JavaScript/Node.js code in sandboxed vm (IMPLEMENTED)
-- ✅ `PythonExecutionTool` - Execute Python code in subprocess with timeout (IMPLEMENTED)
+- ✅ `NodeExecutionTool` - Execute JavaScript/Node.js code in sandboxed vm with direct expression result capture (IMPLEMENTED)
+- ✅ `PythonExecutionTool` - Execute Python code in subprocess with automatic expression wrapping in print() for output capture (IMPLEMENTED)
 - ✅ `FileSystemTool` - Read/write files for data persistence (IMPLEMENTED)
 - 🚧 `WebFetchTool` - Download content from URLs (Planned)
 - ✅ `CalculatorTool` - Mathematical calculations (IMPLEMENTED)
 - ✅ Mock tools for testing (IMPLEMENTED)
+
+**Code Execution Tools:**
+The Node and Python execution tools enable the LLM to write and execute code for algorithmic tasks:
+- **Auto-detection**: Reasoning capability detects algorithmic keywords (reverse, sort, calculate, etc.) and suggests code execution
+- **Expression handling**: Python tool automatically wraps expressions like `"string"[::-1]` in `print()` to capture output
+- **Sandboxing**: Node uses vm.Script, Python uses subprocess with 5-second timeout
+- **System guidance**: CRITICAL RULE in system prompt distinguishes writing algorithms (good) vs executing mentally (bad)
 
 See [scenario.md](scenario.md) for detailed tool specifications.
 

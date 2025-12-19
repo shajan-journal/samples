@@ -75,11 +75,13 @@ export class ReActPattern extends BasePattern {
 
       const reasoningResult = await this.reasoningCapability.execute(reasoningContext);
 
-      // Show debug info if available
+      // Show debug info if available - include EVERYTHING
       if (verbose && reasoningResult.metadata?.debug) {
         const debug = reasoningResult.metadata.debug;
         yield this.createStep('info', `LLM: ${debug.rawLLMOutput || '(empty response)'}`, {
-          metadata: { debug: { rawOutput: debug.rawLLMOutput, length: debug.contentLength, messagesCount: debug.messagesCount } }
+          metadata: { 
+            debug: debug  // Include the ENTIRE debug object with all fields
+          }
         });
       }
 
@@ -91,7 +93,8 @@ export class ReActPattern extends BasePattern {
       yield this.createStep('info', `AGENT-REASONING: ${reasoningResult.output}`, {
         metadata: {
           reasoning: reasoningResult.reasoning,
-          nextAction: reasoningResult.nextAction
+          nextAction: reasoningResult.nextAction,
+          debug: reasoningResult.metadata?.debug  // Also include debug here
         }
       });
 
@@ -125,12 +128,14 @@ export class ReActPattern extends BasePattern {
 
         const toolUseResult = await this.toolUseCapability.execute(toolUseContext);
 
-        // Show debug info if available
+        // Show debug info if available - include EVERYTHING
         if (verbose && toolUseResult.metadata?.debug) {
           const debug = toolUseResult.metadata.debug;
           const toolInfo = debug.toolCallsCount > 0 ? ` [${debug.toolCallsCount} tool call(s)]` : '';
           yield this.createStep('info', `LLM:${toolInfo} ${debug.rawLLMOutput || '(empty response)'}`, {
-            metadata: { debug: { rawOutput: debug.rawLLMOutput, length: debug.contentLength, toolCallsCount: debug.toolCallsCount, messagesCount: debug.messagesCount } }
+            metadata: { 
+              debug: debug  // Include the ENTIRE debug object with all fields
+            }
           });
         }
 

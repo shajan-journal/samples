@@ -296,8 +296,64 @@
 - ✅ Implement NodeExecutionTool (simple vm-based sandbox)
   - Use vm.Script for sandboxing
   - Built-in timeout and memory limits
-  - Capture stdout/stderr
+  - Capture stdout/stderr and expression results
   - No external package installation
+- ✅ Implement PythonExecutionTool (subprocess-based sandbox)
+  - Execute Python code in subprocess with timeout
+  - Capture stdout/stderr with proper error handling
+  - **Auto-wrap expressions**: Automatically detects simple expressions and wraps in print() for output
+  - No external package installation (uses system Python)
+- ✅ Add comprehensive tests for both tools
+- ✅ Register tools in server startup
+
+**Implementation Details:**
+- NodeExecutionTool: Returns expression results directly (e.g., `"hello".split("").reverse().join("")` returns reversed string)
+- PythonExecutionTool: `wrapCodeForOutput()` method automatically wraps expressions like `"string"[::-1]` in `print()` to capture output
+- Both tools have configurable timeouts and comprehensive error handling
+- 20 passing tests for NodeExecutionTool
+- 20 passing tests for PythonExecutionTool
+- All 216 tests passing across all test suites
+
+---
+
+### 10. Multi-Turn Conversations
+**Status**: ✅ Completed
+
+**Tasks:**
+- ✅ Add conversation history support to ExecutionOptions
+- ✅ Update API routes to accept messages array
+- ✅ Update orchestrator to pass messages to patterns
+- ✅ Update UI to track and send conversation history
+- ✅ Test multi-turn conversations with context retention
+
+**Implementation Details:**
+- Added `messages?: Message[]` to ExecutionOptions type
+- API route now accepts and forwards messages array
+- Orchestrator initializes context with conversation history
+- UI tracks all user/assistant messages and includes them in subsequent requests
+- Enables true multi-turn conversations where agent remembers prior context
+- Tested with follow-up questions successfully maintaining context
+
+---
+
+### 11. Enhanced UI Features
+**Status**: ✅ Completed
+
+**Tasks:**
+- ✅ Implement split-panel layout (chat + logs)
+- ✅ Add expandable event viewer with full JSON details
+- ✅ Add download logs functionality
+- ✅ Fix text selection in expanded JSON views
+- ✅ Full-width layout for better space utilization
+- ✅ Session tracking with turn counter
+
+**Implementation Details:**
+- Chat area now takes 50% width when logs panel is visible
+- Logs panel shows event summaries with click-to-expand for full JSON
+- Download button exports all events as timestamped JSON file
+- Removed onClick from JSON content area to enable text selection
+- Changed layout max-width from 960px to 100% for full screen
+- All events stored as full ExecutionEvent objects with complete metadata
 - ✅ Implement PythonExecutionTool (simple subprocess-based)
   - Spawn python subprocess with timeout
   - Capture stdout/stderr and return code

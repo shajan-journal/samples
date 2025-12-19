@@ -209,7 +209,7 @@ export class AgentOrchestrator {
    */
   private createContext(options: ExecutionOptions): AgentContext {
     return {
-      messages: [],
+      messages: options.messages || [],
       tools: this.tools,
       config: this.defaultConfig,
       state: {

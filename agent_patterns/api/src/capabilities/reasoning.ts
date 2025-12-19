@@ -22,16 +22,44 @@ export class ReasoningCapability extends BaseCapability {
 
   async execute(context: AgentContext): Promise<CapabilityResult> {
     try {
+      // Check if user explicitly asks for tool use or if task is algorithmic
+      const userMessage = context.messages.find(m => m.role === 'user')?.content || '';
+      const hasCodeExecution = context.tools?.some(t => 
+        t.name === 'node_execute' || t.name === 'python_execute'
+      );
+      
+      // Check if we already have tool results in the conversation
+      const hasToolResults = context.messages.some(m => m.role === 'tool');
+      
+      // Detect if user explicitly asks for tools or if task requires code execution
+      const explicitlyAsksForTools = /\b(use tools?|try tools?|using tools?|with tools?|tool)\b/i.test(userMessage);
+      const isAlgorithmicTask = /\b(reverse|sort|calculate|compute|parse|transform|filter)\b/i.test(userMessage);
+      // Only suggest code if we DON'T already have tool results
+      const shouldSuggestCode = !hasToolResults && hasCodeExecution && (explicitlyAsksForTools || isAlgorithmicTask);
+
+      console.log('[DEBUG] Reasoning detection:', {
+        userMessage: userMessage.substring(0, 100),
+        hasCodeExecution,
+        hasToolResults,
+        explicitlyAsksForTools,
+        isAlgorithmicTask,
+        shouldSuggestCode
+      });
+
       // Build the reasoning prompt
-      const reasoningPrompt = this.buildReasoningPrompt(context);
+      const reasoningPrompt = this.buildReasoningPrompt(context, shouldSuggestCode);
+
+      console.log('[DEBUG] Reasoning prompt length:', reasoningPrompt.length);
+      console.log('[DEBUG] Prompt includes IMPORTANT:', reasoningPrompt.includes('**IMPORTANT FOR THIS REQUEST**'));
 
       // Add the reasoning instruction to messages
+      // Put system instructions at the BEGINNING so the model sees them first
       const messages: Message[] = [
-        ...context.messages,
         {
           role: 'system',
           content: reasoningPrompt,
         },
+        ...context.messages,
       ];
 
       // Log messages for debugging
@@ -39,12 +67,21 @@ export class ReasoningCapability extends BaseCapability {
       console.log('[DEBUG] Last 2 messages:', JSON.stringify(messages.slice(-2), null, 2));
 
       // Call the LLM to perform reasoning
+      console.log('[DEBUG] About to call LLM chat...');
       const stream = this.llmProvider.chat(messages, context.config);
+      console.log('[DEBUG] Stream received, collecting content...');
       const { content, usage } = await this.collectStreamContent(stream);
+      console.log('[DEBUG] Content collected');
 
       // Log raw LLM output for debugging
       console.log('[DEBUG] Raw LLM output:', content);
       console.log('[DEBUG] Content length:', content?.length || 0);
+
+      // Check if content is empty
+      if (!content || content.trim().length === 0) {
+        console.error('[ERROR] LLM returned empty content!');
+        return this.error('LLM returned empty response');
+      }
 
       // Parse the reasoning output
       const { reasoning, conclusion, nextAction } = this.parseReasoningOutput(content);
@@ -59,6 +96,15 @@ export class ReasoningCapability extends BaseCapability {
             messagesCount: messages.length,
             rawLLMOutput: content,
             contentLength: content?.length || 0,
+            fullMessages: messages,  // Include ALL messages sent to LLM
+            systemPrompt: reasoningPrompt,  // Include the system prompt
+            availableTools: context.tools.map(t => ({ name: t.name, description: t.description })),
+            detectionFlags: {
+              hasCodeExecution,
+              explicitlyAsksForTools,
+              isAlgorithmicTask,
+              shouldSuggestCode
+            }
           },
         },
       });
@@ -72,9 +118,14 @@ export class ReasoningCapability extends BaseCapability {
   /**
    * Build the reasoning prompt based on context
    */
-  private buildReasoningPrompt(context: AgentContext): string {
+  private buildReasoningPrompt(context: AgentContext, shouldSuggestCode: boolean = false): string {
     const hasTools = context.tools && context.tools.length > 0;
     const hasToolResults = context.messages.some(m => m.role === 'tool');
+    
+    // Identify if code execution tools are available
+    const hasCodeExecution = context.tools?.some(t => 
+      t.name === 'node_execute' || t.name === 'python_execute'
+    );
 
     let prompt = `You are performing a reasoning task. Analyze the conversation and available information to reach a logical conclusion.
 
@@ -90,9 +141,47 @@ Instructions:
       prompt += `\n6. If you need additional information, suggest which tool to use (available tools: ${toolNames})`;
     }
 
+    if (hasCodeExecution) {
+      prompt += `
+
+CRITICAL RULE - Code execution vs manual reasoning:
+As an AI language model, you are EXCELLENT at:
+- Understanding problems and breaking them down
+- Writing algorithms and code to solve problems
+- Designing logical solutions
+
+However, you are NOT GOOD at:
+- Manually executing algorithms step-by-step (error-prone)
+- Performing procedural transformations mentally
+- Computing exact results for algorithmic tasks
+
+Therefore: If a task is algorithmic or procedural in nature, you MUST:
+1. Write code to solve it (using node_execute or python_execute)
+2. Execute that code to get the precise answer
+3. NEVER attempt to manually compute or guess the result
+
+Tasks requiring code execution include:
+- String/array manipulations (reversing, sorting, transforming)
+- Mathematical calculations or formula applications
+- Data parsing, processing, or analysis
+- Pattern matching or text processing
+- Any task with deterministic steps that a computer executes better
+
+Rule of thumb: If you would write a function to solve this in real programming, use code execution.
+Your job is to WRITE the algorithm, not EXECUTE it mentally.`;
+
+      // Add extra strong guidance if we detected the user wants tools
+      if (shouldSuggestCode) {
+        prompt += `
+
+**IMPORTANT FOR THIS REQUEST**: The user's request requires code execution. You MUST set NEXT_ACTION to either "node_execute" or "python_execute" - do NOT attempt to solve this manually.`;
+      }
+    }
+
     if (hasToolResults) {
-      prompt += `\n
-Note: Tool results are already available in the conversation. Use them to form your conclusion.`;
+      prompt += `
+
+**IMPORTANT - Tool results are available**: Review the tool execution results in the conversation history. If the tool has successfully provided the answer to the user's question, state that in your CONCLUSION and set NEXT_ACTION to "none". Do not request the same tool again.`;
     }
 
     prompt += `
@@ -128,10 +217,14 @@ CONCLUSION: [Your final conclusion]`;
     const nextActionMatch = content.match(/NEXT_ACTION:\s*(.+?)$/s);
     const nextAction = nextActionMatch ? nextActionMatch[1].trim() : undefined;
 
+    // Filter out "none" (case-insensitive, strip punctuation) and return undefined
+    const normalizedAction = nextAction?.toLowerCase().replace(/[.,!?;]+$/g, '').trim();
+    const shouldUseAction = normalizedAction && normalizedAction !== 'none';
+
     return {
       reasoning,
       conclusion,
-      nextAction: nextAction && nextAction !== 'none' ? nextAction : undefined,
+      nextAction: shouldUseAction ? nextAction : undefined,
     };
   }
 }

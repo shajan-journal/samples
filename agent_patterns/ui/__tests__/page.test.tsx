@@ -12,9 +12,26 @@ vi.mock('../lib/sse', () => ({
 describe('HomePage', () => {
   beforeEach(() => {
     mockStream.mockImplementation(async function* () {
-      yield { timestamp: Date.now(), eventType: 'start', data: { pattern: 'react', input: 'hello' } };
-      yield { timestamp: Date.now(), eventType: 'step', data: { type: 'result', content: 'Working...' } };
-      yield { timestamp: Date.now(), eventType: 'complete', data: { status: 'success', duration: 12 } };
+      yield { 
+        timestamp: Date.now(), 
+        eventType: 'start', 
+        data: { pattern: 'react', input: 'Test question' } 
+      };
+      yield { 
+        timestamp: Date.now(), 
+        eventType: 'step', 
+        data: { type: 'reasoning', content: 'Thinking about the question...' } 
+      };
+      yield { 
+        timestamp: Date.now(), 
+        eventType: 'step', 
+        data: { type: 'answer', content: 'Here is the answer to your question.' } 
+      };
+      yield { 
+        timestamp: Date.now(), 
+        eventType: 'complete', 
+        data: { status: 'success', duration: 123 } 
+      };
     });
 
     global.fetch = vi.fn(() =>
@@ -33,23 +50,46 @@ describe('HomePage', () => {
   it('renders title and form', async () => {
     render(<HomePage />);
 
-    await screen.findByText(/Agent Patterns UI/i);
-    expect(screen.getByLabelText(/Pattern/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Input/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Run pattern/i })).toBeInTheDocument();
+    // Wait for the page to load
+    await screen.findByText(/Agent Patterns/i);
+    
+    // Check for pattern selector
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    
+    // Check for input textarea
+    const textarea = screen.getByPlaceholderText(/Ask a question/i);
+    expect(textarea).toBeInTheDocument();
+    
+    // Check for send button
+    const sendButton = screen.getByRole('button', { name: '↑' });
+    expect(sendButton).toBeInTheDocument();
+    expect(sendButton).toBeDisabled(); // Should be disabled when empty
   });
 
   it('streams events into chat and log', async () => {
     const user = userEvent.setup();
     render(<HomePage />);
 
-    await user.click(screen.getByRole('button', { name: /Run pattern/i }));
+    // Type a message
+    const textarea = screen.getByPlaceholderText(/Ask a question/i);
+    await user.type(textarea, 'Test question');
 
+    // Send button should now be enabled
+    const sendButton = screen.getByRole('button', { name: '↑' });
+    expect(sendButton).not.toBeDisabled();
+
+    // Click send button
+    await user.click(sendButton);
+
+    // Wait for stream to be called
     await waitFor(() => expect(mockStream).toHaveBeenCalled());
-    expect(await screen.findByText(/Starting react/i)).toBeInTheDocument();
-    const chat = screen.getByLabelText(/chat/i);
-    expect(within(chat).getAllByText(/Working/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Complete: success/i)).toBeInTheDocument();
-    expect(screen.getByText(/🚀 START/)).toBeInTheDocument();
+
+    // Check that the answer appears in the UI
+    await waitFor(() => {
+      expect(screen.getByText(/Here is the answer to your question/i)).toBeInTheDocument();
+    });
+
+    // Check that events were collected (logs button should appear)
+    expect(screen.getByText(/Show Logs/i)).toBeInTheDocument();
   });
 });

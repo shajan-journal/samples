@@ -69,10 +69,12 @@ describe('Server Startup Integration', () => {
     });
     server = serverInstance;
 
-    expect(tools.length).toBe(2);
+    expect(tools.length).toBe(4);
     const toolNames = tools.map(t => t.name);
     expect(toolNames).toContain('calculator');
     expect(toolNames).toContain('file_system');
+    expect(toolNames).toContain('node_execute');
+    expect(toolNames).toContain('python_execute');
   });
 
   it('should throw error when openai provider is used without API key', async () => {
