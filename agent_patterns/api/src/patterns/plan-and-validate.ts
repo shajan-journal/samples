@@ -321,11 +321,14 @@ Format:
       return;
     }
 
-    // Include step completion summary
-      const completedCount = steps.filter(s => s.completed).length;
-      const totalSteps = steps.length > 0 ? steps.length : 1;
-      const summary = `Completed ${completedCount}/${totalSteps} steps`;
-    yield this.createStep('answer', `${synthesis.output}\n\n[${summary}]`);
+    // Log step completion summary for debugging but don't include in answer
+    const completedCount = steps.filter(s => s.completed).length;
+    const totalSteps = steps.length > 0 ? steps.length : 1;
+    if (options.verbose) {
+      yield this.createStep('info', `Execution summary: ${completedCount}/${totalSteps} steps completed`);
+    }
+    
+    yield this.createStep('answer', synthesis.output);
   }
 
   private describeTools(tools?: Tool[]): string {
