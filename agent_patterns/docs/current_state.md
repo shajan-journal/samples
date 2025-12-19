@@ -522,42 +522,55 @@
 ---
 
 ### 11. Self-Correcting Patterns Implementation
-**Status**: 🔄 In Progress
+**Status**: ✅ Completed
 
 **Rationale**: Implement intelligent validation and iterative refinement capabilities to enable agents to detect and fix errors automatically.
 
-**Tasks:**
-- ✅ Implement ValidationCapability
-  - Analyzes code execution results
-  - Uses error-analysis utilities for structured error detection
-  - Supports validation against custom criteria
-  - Can fall back to LLM for nuanced validation
-  - 22 passing tests
+**Completed Tasks:**
+- ✅ Implement ValidationCapability (22 tests)
+  - Analyzes code execution results with error-analysis utilities
+  - Supports validation against custom criteria and LLM-based validation
   - Located in `/src/capabilities/validation.ts`
-  - Key methods:
-    - `performAutomaticValidation()` - Detects errors and checks criteria
-    - `validateAgainstCriteria()` - Checks expected output, patterns, forbidden text
-    - `performLLMValidation()` - Uses LLM for complex validation scenarios
-    - `parseValidationResponse()` - Parses LLM feedback into structured issues/fixes
-- 🔄 Implement IterativeRefinementPattern (PENDING)
-  - Generate-execute-validate-refine loop
-  - Uses iteration state and conversation management
-  - Detects convergence and prevents infinite loops
-  - Will need to adapt to async generator pattern from BasePattern
-- 🔄 Implement PlanAndValidatePattern (PENDING)
-  - Combines planning + execution + validation
-  - Uses planning capability to create solutions
-  - Validates results and suggests refinements
   
-**Test Results**: 311 tests passing
-- All previous tests still passing
-- 22 new ValidationCapability tests added
-- Covers:
-  - Basic validation (success/failure detection)
-  - Error analysis (syntax, runtime, timeout errors)
-  - Criteria validation (expected output, patterns, forbidden text)
-  - Custom validators
-  - LLM validation fallback
+- ✅ Implement IterativeRefinementPattern (2 tests)
+  - Generate → execute (Node/Python) → validate → analyze errors → refine → repeat
+  - Uses ValidationCapability, utils/error-analysis, utils/conversation, patterns/utils
+  - Tracks iterationState and records attempts with metadata
+  - Detects convergence and prevents infinite loops
+  - Located in `/src/patterns/iterative-refinement.ts`
+  - Key features:
+    - Progressive streaming of steps via AsyncGenerator
+    - Validation-gated iteration with feedback loops
+    - Max attempt caps and convergence detection
+    - Full debug metadata collection
+  
+- ✅ Implement PlanAndValidatePattern (7 tests)
+  - Plan → Execute Steps → Validate → Refine
+  - Lightweight planning step followed by step-wise execution
+  - Validates each step and triggers refinement on failure
+  - Supports optional re-validation after refinement
+  - Located in `/src/patterns/plan-and-validate.ts`
+  - Key features:
+    - Parses numbered plan into Step objects
+    - Executes each step with tool-use and validation gates
+    - Feeds validation feedback for refinement iterations
+    - Reports completion summary with step metrics
+  - **Known limitation:** ValidationCapability simply inspects the latest tool output; it does not request additional tool calls, so validation steps in the plan must already contain executable tool usage if code-based verification is required.
+
+**Test Results**: 321 tests passing (9 self-correcting tests added)
+- All ValidationCapability tests passing (22)
+- All IterativeRefinementPattern tests passing (2)
+- All PlanAndValidatePattern tests passing (7)
+- No regressions in existing tests
+
+**Files Modified/Created:**
+- ✅ `/src/patterns/iterative-refinement.ts` - IterativeRefinementPattern
+- ✅ `/src/patterns/plan-and-validate.ts` - PlanAndValidatePattern
+- ✅ `/src/patterns/index.ts` - Export both new patterns
+- ✅ `/scripts/test-pattern.ts` - Added support for new patterns
+- ✅ `/scripts/start-api.ts` - Register both patterns with orchestrator
+- ✅ `/tests/patterns/iterative-refinement.test.ts` - Tests for iterative refinement
+- ✅ `/tests/patterns/plan-and-validate.test.ts` - Tests for plan-and-validate
   - Metadata and metrics tracking
   - Edge cases and error handling
 
@@ -586,17 +599,48 @@
 
 ## Next Action
 
-**Step 11 Continuation: Remaining Self-Correcting Patterns**
-- Implement IterativeRefinementPattern
-  - Requires adapting to async generator BasePattern interface
-  - Will implement generate-execute-validate-refine loop
-  - Use iteration state to track attempts and convergence
-- Implement PlanAndValidatePattern
-  - Combines planning capability with validation
-  - Provides feedback loop for self-correction
-- Add comprehensive tests for new patterns
-- Update orchestrator to register new capabilities and patterns
-- Document integration points
+### Prioritized Implementation Plan
 
-**Why This Order:**
-ValidationCapability is now complete and tested. The remaining patterns will leverage this capability to implement iterative self-correction. The async generator interface of BasePattern requires careful implementation to properly yield steps while managing iteration state.
+1) Implement IterativeRefinementPattern (highest priority)
+- Summary: Generate → execute (Node/Python) → validate → analyze errors → refine → repeat until converge/max-iterations.
+- Implementation Notes:
+  - Use async generator pattern from `BasePattern` to yield steps progressively.
+  - Leverage `ValidationCapability`, `utils/error-analysis`, `utils/conversation`, and `patterns/utils` for convergence and iteration control.
+  - Track `iterationState` in `AgentContext` and record attempts with metadata.
+- Acceptance Criteria:
+  - Unit tests cover: syntax/runtime/timeout errors, convergence detection, max-iteration cap, success path with refinement.
+  - Integration test with Mock LLM: first attempts fail, later succeeds; emits correct step sequence and final result.
+  - Registered with orchestrator; appears in `/api/patterns` and streams via `/api/execute` (SSE).
+
+2) Implement PlanAndValidatePattern
+- Summary: Lightweight planning step → execute steps sequentially → validate after each step → refine and continue.
+- Implementation Notes:
+  - Start with minimal planning prompt or stub `PlanningCapability` that outputs ordered steps.
+  - Reuse `ValidationCapability` to gate progress and trigger refinements.
+  - Maintain simple step state and emit clear streaming events per step.
+- Acceptance Criteria:
+  - Unit tests for plan parsing, step execution order, validation gating, and refinement behavior.
+  - Exposed via orchestrator and `/api/patterns`; SSE verified in API tests.
+
+3) Wire-up and Tests
+- Extend `scripts/test-pattern.ts` to run new patterns with options (iterations, debug).
+- Add API SSE tests to cover new patterns’ event shapes and error handling.
+
+4) Documentation Updates
+- Update this file and `architecture.md` with new patterns, flow diagrams, and usage examples.
+- Add brief examples to `prd.md` showing when to choose each pattern.
+
+### Fast-Follow (enables richer demos)
+
+- WebFetch Tool
+  - Minimal `web_fetch` tool supporting GET for JSON/text with timeout, size limits, and content-type handling.
+  - Unit tests: success/timeout/error cases, content-type branching, size limit enforcement.
+
+- Visualization Manifest Plumbing
+  - PythonExecutionTool: detect `visualization_manifest.json`, parse it, and include referenced CSV/JSON files in tool result.
+  - UI: render at least Table + Line/Bar chart types based on the manifest; keep components lightweight.
+  - Tests: manifest parsing unit tests; UI component tests for basic render and error states.
+
+**Why This Order**
+- Self-correcting patterns immediately leverage the completed `ValidationCapability` and iteration utilities, delivering visible capability gains.
+- WebFetch + Visualization unlock the scenario breadth (data → analysis → charts) and can follow once patterns are in place.

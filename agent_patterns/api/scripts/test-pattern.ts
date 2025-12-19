@@ -9,6 +9,8 @@
  */
 
 import { ReActPattern } from '../src/patterns/react';
+import { IterativeRefinementPattern } from '../src/patterns/iterative-refinement';
+import { PlanAndValidatePattern } from '../src/patterns/plan-and-validate';
 import { AgentContext, PatternStep } from '../src/types';
 import { MockLLMProvider } from '../src/llm/mock';
 import { OpenAIProvider } from '../src/llm/openai';
@@ -24,7 +26,9 @@ if (args.length < 2) {
   console.log('Usage: npm run test:pattern -- <pattern-name> <input> [options]');
   console.log('');
   console.log('Patterns:');
-  console.log('  react  - Reasoning + Acting loop');
+  console.log('  react                - Reasoning + Acting loop');
+  console.log('  iterative-refinement - Generate → Execute → Validate → Refine');
+  console.log('  plan-and-validate    - Plan → Execute Steps → Validate → Refine');
   console.log('');
   console.log('Options:');
   console.log('  --provider=<mock|openai>  - LLM provider to use (default: mock)');
@@ -103,6 +107,10 @@ async function main() {
   let pattern;
   if (patternName === 'react') {
     pattern = new ReActPattern(llmProvider);
+  } else if (patternName === 'iterative-refinement') {
+    pattern = new IterativeRefinementPattern(llmProvider);
+  } else if (patternName === 'plan-and-validate') {
+    pattern = new PlanAndValidatePattern(llmProvider);
   } else {
     console.error(`Unknown pattern: ${patternName}`);
     process.exit(1);

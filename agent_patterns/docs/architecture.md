@@ -131,6 +131,7 @@ interface PatternStep {
 
 **Implementations:**
 - ✅ `ReActPattern` - Reasoning + Acting loop (IMPLEMENTED)
+- ✅ `PlanAndValidatePattern` - Lightweight upfront plan, tool execution, then validation gate (IMPLEMENTED)
 - 🚧 `PlanAndExecutePattern` - Upfront planning (Planned)
 - 🚧 `ReWOOPattern` - Parallel tool execution (Planned)
 - 🚧 `ReflectionPattern` - Generate + critique + refine (Planned)
@@ -142,6 +143,12 @@ interface PatternStep {
 - 🚧 `IterativeRefinementPattern` - Multiple refinement passes (Planned)
 - 🚧 `EnsemblePattern` - Aggregate multiple agent outputs (Planned)
 - 🚧 `RetrievalAugmentedPattern` - Context retrieval then reasoning (Planned)
+
+#### Plan-and-Validate Pattern
+
+Flow: (1) prompt the LLM for a numbered plan that references concrete tools, (2) execute each step through `requestToolExecution()` so the LLM must emit runnable tool calls, (3) run `ValidationCapability` after every tool output, optionally refine the failed step, and (4) synthesize the final answer.
+
+Current limitation: the validation stage does **not** loop back through `requestToolExecution()`. `ValidationCapability` ([api/src/capabilities/validation.ts](../api/src/capabilities/validation.ts)) only inspects the latest tool result, applies rule-based checks, and if needed asks the LLM for a textual verdict. It cannot ask the LLM to design or run additional validation tools, so validation steps are observational rather than executable. When stricter validation is required, provide explicit validation steps in the original plan (e.g., "Call node_execute to reverse the string again and compare") so they are treated as regular tool-using steps before the passive validation gate.
 
 ### 4. Orchestrator
 Entry point that manages pattern execution and streaming.

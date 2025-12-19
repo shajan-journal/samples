@@ -100,6 +100,14 @@ export async function setupServer(config: ServerSetupConfig = {}): Promise<Serve
   // Register patterns with the orchestrator
   const reactPattern = new ReActPattern(llmProvider);
   orchestrator.registerPattern(reactPattern);
+  // Register IterativeRefinementPattern
+  const { IterativeRefinementPattern } = await import('../src/patterns/iterative-refinement');
+  const iterativePattern = new IterativeRefinementPattern(llmProvider);
+  orchestrator.registerPattern(iterativePattern);
+  // Register PlanAndValidatePattern
+  const { PlanAndValidatePattern } = await import('../src/patterns/plan-and-validate');
+  const planAndValidatePattern = new PlanAndValidatePattern(llmProvider);
+  orchestrator.registerPattern(planAndValidatePattern);
 
   return { llmProvider, tools, orchestrator, port, server };
 }

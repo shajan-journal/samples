@@ -672,6 +672,10 @@ See [current_state.md](current_state.md) for the current implementation progress
 - 🚧 Self-correcting patterns (next)
 - 🚧 Additional patterns and capabilities
 
+### Known Limitations
+
+- Plan-and-Validate currently relies on `ValidationCapability` to judge each step after tool execution. The capability inspects the latest tool output but does not ask the LLM to design or run validation-specific tools, so "validation" steps are descriptive checks rather than executable tool calls. See [docs/architecture.md](docs/architecture.md#plan-and-validate-pattern) for more detail and mitigation ideas.
+
 ## Documentation
 
 - [PRD](docs/prd.md) - Product requirements and goals
