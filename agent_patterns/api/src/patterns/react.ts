@@ -141,13 +141,20 @@ export class ReActPattern extends BasePattern {
 
         // If tools were called
         if (toolUseResult.toolCalls && toolUseResult.toolCalls.length > 0) {
-          // Add assistant's tool call message
-          if (toolUseResult.output) {
-            messages.push({
-              role: 'assistant',
-              content: toolUseResult.output
-            });
-          }
+          // Add assistant's tool call message with tool_calls property
+          // This is required by OpenAI API to properly link tool calls with their results
+          messages.push({
+            role: 'assistant',
+            content: toolUseResult.output || '',
+            tool_calls: toolUseResult.toolCalls.map(tc => ({
+              id: tc.id,
+              type: 'function' as const,
+              function: {
+                name: tc.name,
+                arguments: JSON.stringify(tc.arguments)
+              }
+            }))
+          });
 
           // Process each tool call
           for (let i = 0; i < toolUseResult.toolCalls.length; i++) {
@@ -207,7 +214,7 @@ export class ReActPattern extends BasePattern {
       }
 
       // Check for early termination signals
-      if (this.shouldTerminate(reasoningResult)) {
+      if (this.shouldTerminate(reasoningResult, messages)) {
         isComplete = true;
         yield this.createStep('info', 'AGENT: Task completed');
         break;
@@ -266,7 +273,7 @@ export class ReActPattern extends BasePattern {
   /**
    * Check if we should terminate early
    */
-  private shouldTerminate(result: CapabilityResult): boolean {
+  private shouldTerminate(result: CapabilityResult, messages: Message[]): boolean {
     // Check nextAction for termination signals
     if (result.nextAction) {
       const nextAction = result.nextAction.toLowerCase();
@@ -277,6 +284,16 @@ export class ReActPattern extends BasePattern {
       if (nextAction === 'none') {
         return true;
       }
+    }
+    
+    // Check if we have tool results in conversation (indicates we're post-tool execution)
+    const hasToolResultsInConversation = messages.some(m => m.role === 'tool');
+    
+    // After tool execution, if there's no nextAction, the LLM probably said "none" 
+    // which was filtered out by parseReasoningOutput()
+    if (hasToolResultsInConversation && !result.nextAction) {
+      // After tool execution with no next action, task is likely complete
+      return true;
     }
 
     return false;

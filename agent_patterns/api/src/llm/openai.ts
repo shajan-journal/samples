@@ -207,6 +207,16 @@ export class OpenAIProvider extends BaseLLMProvider {
           tool_call_id: msg.toolCallId || '',
         };
       }
+      
+      // Handle assistant messages with tool_calls
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        return {
+          role: 'assistant',
+          content: msg.content || null,  // OpenAI allows null content when there are tool_calls
+          tool_calls: msg.tool_calls,
+        };
+      }
+      
       return {
         role: msg.role as 'system' | 'user' | 'assistant',
         content: msg.content,

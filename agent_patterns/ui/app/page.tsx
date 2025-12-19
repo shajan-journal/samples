@@ -88,12 +88,11 @@ export default function HomePage() {
     setSession(prev => ({ ...prev, messageCount: prev.messageCount + 1 }));
 
     // Build conversation history (exclude thinking messages and IDs)
+    // Note: Don't add current input here - the pattern will add it to avoid duplicates
     const conversationHistory = messages.map(m => ({
       role: m.role,
       content: m.content
     }));
-    // Add current user message to history
-    conversationHistory.push({ role: 'user', content: input });
 
     try {
       for await (const event of streamExecution({ 

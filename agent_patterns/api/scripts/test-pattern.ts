@@ -14,6 +14,8 @@ import { MockLLMProvider } from '../src/llm/mock';
 import { OpenAIProvider } from '../src/llm/openai';
 import { CalculatorTool } from '../src/tools/calculator';
 import { FileSystemTool } from '../src/tools/file-system';
+import { NodeExecutionTool } from '../src/tools/node-execution';
+import { PythonExecutionTool } from '../src/tools/python-execution';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -94,6 +96,8 @@ async function main() {
   // Set up tools
   const calculatorTool = new CalculatorTool();
   const fileSystemTool = new FileSystemTool();
+  const nodeExecutionTool = new NodeExecutionTool();
+  const pythonExecutionTool = new PythonExecutionTool();
 
   // Create pattern
   let pattern;
@@ -107,7 +111,7 @@ async function main() {
   // Set up context
   const context: AgentContext = {
     messages: [],
-    tools: [calculatorTool, fileSystemTool],
+    tools: [calculatorTool, fileSystemTool, nodeExecutionTool, pythonExecutionTool],
     config: {
       provider: provider as 'openai' | 'mock',
       model: provider === 'openai' ? 'gpt-4' : 'mock',

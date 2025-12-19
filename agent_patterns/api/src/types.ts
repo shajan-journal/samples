@@ -11,6 +11,14 @@ export interface Message {
   content: string;
   name?: string;  // For tool messages
   toolCallId?: string;  // For tool response messages
+  tool_calls?: Array<{  // For assistant messages that call tools (OpenAI format)
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
 }
 
 // ============================================================================
