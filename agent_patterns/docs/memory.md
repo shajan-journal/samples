@@ -3,17 +3,19 @@
 ## Project Overview
 TypeScript/Node.js project exploring agentic AI patterns through composable capabilities. Focus on learning and experimentation, not production-grade implementation.
 
-## Current Status (Step 8/13 Complete)
+## Current Status (Step 11 In Progress)
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, FileSystem)
+- ✅ Code execution tools (NodeExecution, PythonExecution)
 - ✅ LLM providers (Mock, OpenAI)
-- ✅ Capabilities (Reasoning, ToolUse, Synthesis)
+- ✅ Capabilities (Reasoning, ToolUse, Synthesis, Validation)
 - ✅ Patterns (ReAct)
 - ✅ Orchestrator (AgentOrchestrator)
 - ✅ API Layer (Express + SSE)
 - ✅ UI Layer (Next.js chat, SSE streaming)
+- ✅ Refactoring (Error analysis, iteration state, pattern utils, conversation management)
 
-**Tests:** 167 passing across core/API + 2 passing in UI (Vitest)
+**Tests:** 311 passing (17 test suites)
 
 ## Code Organization
 
@@ -31,12 +33,15 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
     /patterns/         # Orchestrated workflows
       base.ts          # BasePattern abstract class + PatternRegistry
       react.ts         # Reasoning + Acting loop pattern
+      utils.ts         # Shared pattern utilities (completion detection, convergence)
       index.ts         # Exports
       
     /tools/            # External functions
       base.ts          # BaseTool abstract class + ToolRegistry
       calculator.ts    # Math calculations with security
       file-system.ts   # File ops in sandboxed workspace
+      node-execution.ts # Execute JavaScript/Node.js code in vm sandbox
+      python-execution.ts # Execute Python code in subprocess
       index.ts         # Exports
       
     /llm/              # LLM provider abstractions
@@ -44,6 +49,10 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
       mock.ts          # MockLLMProvider for testing
       openai.ts        # OpenAIProvider with streaming
       index.ts         # Exports
+      
+    /utils/            # Shared utilities
+      error-analysis.ts # Error categorization and analysis
+      conversation.ts   # Conversation management and pruning
       
     /orchestrator/     # Main execution engine
       orchestrator.ts  # AgentOrchestrator class

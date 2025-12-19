@@ -3,7 +3,7 @@
 ## Project Overview
 A collection of simple, illustrative samples demonstrating different agentic AI patterns using composable agent capabilities. Focus is on quick exploration and learning, not production-grade implementation.
 
-**Tech Stack**: Node.js / TypeScript
+**Tech Stack**: Node.js / TypeScript (API + core), Next.js / TypeScript (UI)
 
 ## Goals
 - Demonstrate core agent capabilities in isolation
@@ -157,17 +157,17 @@ See [scenario.md](scenario.md) for detailed problem domain, use cases, and tools
 
 ## Implementation Status
 
-**Completed (Steps 1-9):**
+**Completed (Steps 1-10 + partial 11):**
 - ✅ Core types and TypeScript interfaces
 - ✅ Basic tools: Calculator, FileSystem
 - ✅ Code execution tools: NodeExecution (vm sandbox), PythonExecution (subprocess with auto-wrapping)
 - ✅ LLM providers: OpenAI, Mock
-- ✅ Capabilities: Reasoning (with algorithmic detection), ToolUse (with debug metadata), Synthesis
+- ✅ Capabilities: Reasoning (with algorithmic detection), ToolUse (with debug metadata), Synthesis, Validation
 - ✅ Patterns: ReAct with full debug output
 - ✅ Orchestrator: Unified execution engine with multi-turn conversation support
 - ✅ API Layer: Express + SSE with conversation history
 - ✅ UI Layer: Next.js with split-panel debug views, expandable events, JSON download
-- ✅ 216 tests passing
+- ✅ 311 tests passing
 
 **In Progress (Steps 10-13):**
 - 🚧 Additional Patterns (Planning, Reflection, etc.)

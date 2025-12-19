@@ -334,15 +334,10 @@ npm run test:orchestrator -- <pattern> "<input>" [--provider=openai] [--debug]
 ```
 
 **Test Coverage:**
-- Type validation tests (31 tests)
-- Calculator tool tests (54 tests)  
-- File system tool tests (31 tests)
-- LLM provider tests (32 tests)
-- Capability tests (22 tests)
-- Pattern tests (12 tests)
-- Orchestrator tests (17 tests)
-- API server tests (10 tests)
-- **Total: 170 tests, all passing ✅**
+- All API tests passing: 311 tests, 17 suites ✅
+- Includes tools, LLM providers, capabilities (Reasoning, ToolUse, Validation), patterns (ReAct), orchestrator, API, and utilities
+  
+Note: Detailed per-suite counts evolve frequently; see docs/current_state.md for up-to-date breakdowns.
 
 ## Examples
 

@@ -54,6 +54,12 @@ export interface ToolResult {
   success: boolean;
   data?: any;
   error?: string;
+  errorType?: 'syntax' | 'runtime' | 'timeout' | 'validation' | 'logical';
+  errorDetails?: {
+    message: string;
+    lineNumber?: number;
+    stackTrace?: string;
+  };
   metadata?: Record<string, any>;
 }
 
@@ -77,6 +83,7 @@ export interface AgentContext {
   tools: Tool[];
   config: LLMConfig;
   state?: Record<string, any>;
+  iterationState?: IterationState;
 }
 
 export interface CapabilityResult {
@@ -264,4 +271,55 @@ export interface ToolInfo {
 export interface TestToolRequest {
   toolName: string;
   params: Record<string, any>;
+}
+
+// ============================================================================
+// Iteration and Validation Types (for Self-Correcting Patterns)
+// ============================================================================
+
+export interface IterationState {
+  attemptNumber: number;
+  maxAttempts: number;
+  previousAttempts: AttemptHistory[];
+  converged: boolean;
+  startTime: number;
+}
+
+export interface AttemptHistory {
+  attemptNumber: number;
+  code?: string;
+  result?: ToolResult;
+  error?: string;
+  timestamp: number;
+  duration?: number;
+}
+
+export interface ValidationResult extends CapabilityResult {
+  isValid: boolean;
+  validationIssues: string[];
+  suggestedFixes: string[];
+}
+
+export interface ValidationCriteria {
+  expectedOutput?: string;
+  outputPattern?: RegExp;
+  shouldNotContain?: string[];
+  customValidator?: (output: string) => boolean;
+  allowPartialMatch?: boolean;
+}
+
+export interface ValidationMetrics {
+  passed: boolean;
+  score?: number;
+  criteria: string[];
+  failures: string[];
+  details?: Record<string, any>;
+}
+
+export interface ToolExecutionContext {
+  toolName: string;
+  attempt: number;
+  parentCapability?: string;
+  timestamp: number;
+  parentPattern?: string;
 }

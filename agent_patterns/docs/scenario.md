@@ -35,36 +35,30 @@ Generate Python code that solves user-requested data analysis and visualization 
 - No external dependencies
 - Built-in security via vm module
 
-**PythonExecutionTool**: Executes Python code in an isolated virtual environment.
-- Data analysis, ML, numpy/pandas work
-- Full package management
-- Process isolation
+**PythonExecutionTool**: Executes Python code in a subprocess.
+- Fast code execution for simple scripts
+- Uses system Python (no virtualenv or package installation)
+- Auto-wraps simple expressions in print() for output capture
 
-**Common Capabilities:**
-- Create working directory for the task
+**Common Capabilities (current implementation):**
 - Execute code with timeout enforcement
 - Capture stdout, stderr, and return code
-- Return generated files (CSV, images, etc.)
-- Clean up environment after execution
 
-**Python-Specific:**
-- Set up virtual environment
-- Install required packages (pip install)
+**Python-Specific (current):**
+- Auto-detects simple expressions and wraps in print() for output
 
 **Node-Specific:**
 - Sandboxed vm.Script execution
 - Built-in memory and timeout limits
 
-**Interface:**
+**Interface (current):**
 ```typescript
 interface CodeExecutionTool extends Tool {
   name: "node_execute" | "python_execute";
-  description: "Execute Python code in isolated environment";
+  description: "Execute code with sandboxing/timeouts";
   parameters: {
-    code: string;              // Python code to execute
-    packages?: string[];       // pip packages to install
-    workingDir?: string;       // Optional working directory
-    timeout?: number;          // Execution timeout in seconds
+    code: string;              // Code to execute
+    timeout?: number;          // Execution timeout in ms
   };
 }
 
@@ -73,8 +67,6 @@ interface PythonExecutionResult extends ToolResult {
   stdout: string;              // Standard output
   stderr: string;              // Error output
   returnCode: number;          // Exit code
-  files?: FileOutput[];        // Generated files
-  visualizations?: VisualizationManifest;  // Visualization metadata
   executionTime: number;       // Time taken in ms
 }
 
@@ -86,15 +78,10 @@ interface FileOutput {
 }
 ```
 
-**Implementation Details:**
+**Implementation Details (current):**
 - Uses Node.js `child_process` to spawn Python
-- Creates temp directory with UUID for isolation
-- Runs `python -m venv` to create virtual environment
-- Activates venv and installs packages
-- Writes code to temp file and executes
-- Monitors output streams in real-time
-- Copies generated files to accessible location
-- Cleans up temp directory on completion
+- Writes code to a temp file and executes it
+- Captures stdout/stderr and enforces timeout
 
 ### 2. File System Tool
 Read and write files for data persistence and sharing.
@@ -117,25 +104,8 @@ interface FileSystemTool extends Tool {
 }
 ```
 
-### 3. Web Fetch Tool
-Download content from URLs.
-
-**Capabilities:**
-- HTTP GET requests
-- Parse HTML content
-- Download files
-- Simple rate limiting
-
-**Interface:**
-```typescript
-interface WebFetchTool extends Tool {
-  name: "web_fetch";
-  parameters: {
-    url: string;
-    type?: 'html' | 'json' | 'text' | 'file';
-  };
-}
-```
+### 3. Web Fetch Tool (Planned)
+Download content from URLs. Not yet implemented.
 
 ### 4. Calculator Tool
 Perform mathematical calculations.
@@ -145,7 +115,7 @@ Perform mathematical calculations.
 - Statistical functions
 - Unit conversions
 
-### 5. Visualization Output Tool
+### 5. Visualization Output Tool (Planned)
 Defines the contract for Python code to produce renderable visualizations.
 
 **Purpose:**
@@ -230,8 +200,8 @@ with open('visualization_manifest.json', 'w') as f:
 print("SUCCESS: Generated visualization manifest")
 ```
 
-**Tool Integration:**
-The Python Execution Tool automatically looks for `visualization_manifest.json` in the output directory and includes it in the result.
+**Tool Integration (Planned):**
+The Python Execution Tool will detect `visualization_manifest.json` in the output directory and include it in the result.
 
 **Supported Visualizations:**
 

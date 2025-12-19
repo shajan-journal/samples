@@ -475,30 +475,128 @@
 
 ---
 
+---
+
+### 10. Refactoring for Self-Correcting Patterns
+**Status**: ✅ Completed
+
+**Rationale**: Before implementing self-correcting patterns, foundational utilities and types were needed to support error analysis, iteration tracking, and validation logic.
+
+**Tasks:**
+- ✅ Create error analysis utilities module
+- ✅ Add iteration state types and interfaces
+- ✅ Enhance tool result structures with error metadata
+- ✅ Extract completion detection to shared utils
+- ✅ Create conversation management utilities
+- ✅ Add comprehensive tests for all new utilities
+
+**Implementation Details:**
+- Created `/src/utils/error-analysis.ts` with comprehensive error analysis
+  - Categorizes errors (syntax, runtime, timeout, logical)
+  - Extracts error messages, line numbers, and stack traces
+  - Suggests context-aware fixes
+  - Detects error convergence and similarity
+  - 25 passing tests
+- Created `/src/utils/conversation.ts` for conversation management
+  - Summarizes previous attempts
+  - Prunes old messages to manage context size
+  - Extracts relevant context based on token limits
+  - Identifies learnings from failed attempts
+  - 23 passing tests
+- Created `/src/patterns/utils.ts` for shared pattern utilities
+  - Extracted completion detection from ReActPattern
+  - Added convergence checking for iterative patterns
+  - Success rate calculation and best attempt selection
+  - Iteration control logic
+  - 25 passing tests
+- Added new types to `/src/types.ts`:
+  - `IterationState` - Tracks attempts and convergence
+  - `AttemptHistory` - Records each iteration attempt
+  - `ValidationResult` - Extends CapabilityResult with validation info
+  - `ValidationCriteria` and `ValidationMetrics` - Define validation rules
+  - `ToolExecutionContext` - Tracks tool execution metadata
+- Enhanced `ToolResult` with `errorType` and `errorDetails`
+- Enhanced `AgentContext` with optional `iterationState`
+- All 289 tests passing (73 new tests added)
+
+---
+
+### 11. Self-Correcting Patterns Implementation
+**Status**: 🔄 In Progress
+
+**Rationale**: Implement intelligent validation and iterative refinement capabilities to enable agents to detect and fix errors automatically.
+
+**Tasks:**
+- ✅ Implement ValidationCapability
+  - Analyzes code execution results
+  - Uses error-analysis utilities for structured error detection
+  - Supports validation against custom criteria
+  - Can fall back to LLM for nuanced validation
+  - 22 passing tests
+  - Located in `/src/capabilities/validation.ts`
+  - Key methods:
+    - `performAutomaticValidation()` - Detects errors and checks criteria
+    - `validateAgainstCriteria()` - Checks expected output, patterns, forbidden text
+    - `performLLMValidation()` - Uses LLM for complex validation scenarios
+    - `parseValidationResponse()` - Parses LLM feedback into structured issues/fixes
+- 🔄 Implement IterativeRefinementPattern (PENDING)
+  - Generate-execute-validate-refine loop
+  - Uses iteration state and conversation management
+  - Detects convergence and prevents infinite loops
+  - Will need to adapt to async generator pattern from BasePattern
+- 🔄 Implement PlanAndValidatePattern (PENDING)
+  - Combines planning + execution + validation
+  - Uses planning capability to create solutions
+  - Validates results and suggests refinements
+  
+**Test Results**: 311 tests passing
+- All previous tests still passing
+- 22 new ValidationCapability tests added
+- Covers:
+  - Basic validation (success/failure detection)
+  - Error analysis (syntax, runtime, timeout errors)
+  - Criteria validation (expected output, patterns, forbidden text)
+  - Custom validators
+  - LLM validation fallback
+  - Metadata and metrics tracking
+  - Edge cases and error handling
+
+**Files Modified/Created:**
+- ✅ `/src/capabilities/validation.ts` - New ValidationCapability implementation
+- ✅ `/src/capabilities/index.ts` - Export ValidationCapability
+- ✅ `/tests/capabilities/validation.test.ts` - Comprehensive test suite
+
+---
+
 ## Current Status Summary
 
-**Completed Steps**: 9/13  
-**In Progress**: None  
+**Completed Steps**: 10/13 (plus partial Step 11)  
+**In Progress**: Step 11 (ValidationCapability complete, remaining patterns pending)  
 **Blocked**: None  
 
-**Test Results**: 208 tests passing (out of 216 total, 8 tests need updates for new functionality)
+**Test Results**: 311 tests passing
 - Types: Tests passing
 - Tools (Calculator + FileSystem + NodeExecution + PythonExecution): Tests passing
 - LLM Providers (Mock + OpenAI): Tests passing
-- Capabilities (Reasoning + ToolUse + Synthesis): Tests passing
+- Capabilities (Reasoning + ToolUse + Synthesis + Validation): Tests passing
 - Patterns (ReAct): Tests passing
-- Orchestrator: Most tests passing
+- Orchestrator: Tests passing
 - API: Tests passing
-- UI: 2 tests passing
+- Utils (Error Analysis + Conversation + Pattern Utils): Tests passing
 
 ## Next Action
 
-**Step 10: Self-Correcting Patterns** - Build on code execution tools
-- Implement ValidationCapability (checks execution results)
-- Implement IterativeRefinementPattern (generate → execute → analyze → refine)
-- Implement PlanAndValidatePattern (plan → code → test → fix)
-- Demonstrate self-correction based on execution feedback
+**Step 11 Continuation: Remaining Self-Correcting Patterns**
+- Implement IterativeRefinementPattern
+  - Requires adapting to async generator BasePattern interface
+  - Will implement generate-execute-validate-refine loop
+  - Use iteration state to track attempts and convergence
+- Implement PlanAndValidatePattern
+  - Combines planning capability with validation
+  - Provides feedback loop for self-correction
+- Add comprehensive tests for new patterns
+- Update orchestrator to register new capabilities and patterns
+- Document integration points
 
 **Why This Order:**
-Code execution tools are now complete. The next logical step is to demonstrate patterns that leverage these tools for iterative improvement and self-correction - showcasing the power of agents that can learn from their execution failures.
-
+ValidationCapability is now complete and tested. The remaining patterns will leverage this capability to implement iterative self-correction. The async generator interface of BasePattern requires careful implementation to properly yield steps while managing iteration state.

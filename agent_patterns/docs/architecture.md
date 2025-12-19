@@ -6,7 +6,7 @@ Three-layer architecture with clear separation between UI, API, and core agent l
 
 ```
 ┌─────────────────────────────────────────────┐
-│              UI Layer (Planned)             │
+│            UI Layer (Implemented)           │
 │  (Web Interface + Debug View)               │
 └─────────────────┬───────────────────────────┘
                   │ HTTP/WebSocket
@@ -24,7 +24,7 @@ Three-layer architecture with clear separation between UI, API, and core agent l
 ```
 
 **Implementation Status:**
-- ✅ Core Agent Layer: Tools (4 total), LLM Providers, Capabilities (3 total), Patterns (ReAct), Orchestrator
+- ✅ Core Agent Layer: Tools (4 total), LLM Providers, Capabilities (4 total), Patterns (ReAct), Orchestrator
 - ✅ API Layer: Express server with SSE streaming and multi-turn conversation support
 - ✅ UI Layer: Next.js interface with split-panel debug views, expandable events, and JSON export
 
@@ -64,7 +64,7 @@ interface CapabilityResult {
 - 🚧 `JITCapability` - Dynamic pattern composition (Planned)
 - 🚧 `SummarizationCapability` - Condenses information to key points (Planned)
 - 🚧 `ExtractionCapability` - Pulls structured data from text (Planned)
-- 🚧 `ValidationCapability` - Checks against rules and constraints (Planned)
+- ✅ `ValidationCapability` - Checks against rules and constraints (IMPLEMENTED)
 - 🚧 `ComparisonCapability` - Analyzes similarities and differences (Planned)
 - ✅ `SynthesisCapability` - Combines multiple sources into unified output (IMPLEMENTED)
 
@@ -334,6 +334,8 @@ POST   /api/test-tool
 - JSON view for detailed inspection
 
 ## Project Structure
+
+Note: This section shows the target structure, including some planned modules that are not yet implemented. For the authoritative, up-to-date status of what exists today, see [docs/current_state.md](docs/current_state.md). Implemented components are called out in the Implementation Status above; unimplemented items here are aspirational.
 
 ```
 /src
