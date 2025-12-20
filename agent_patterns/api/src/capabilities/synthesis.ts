@@ -25,6 +25,25 @@ export class SynthesisCapability extends BaseCapability {
 
   async execute(context: AgentContext): Promise<CapabilityResult> {
     try {
+      // Check if there are visualizations in the context state (from previous steps)
+      const hasVisualizations = context.state?.visualizations;
+      
+      if (hasVisualizations) {
+        // If visualizations were generated, return a simple success message
+        // The visualizations will be included in the metadata automatically
+        console.log('[SynthesisCapability] Found visualization data, returning simple message');
+        return this.success(
+          'I\'ve generated the visualization. It should appear above.',
+          {
+            metadata: {
+              capability: this.name,
+              visualizations: context.state!.visualizations,
+              sources: this.identifySources(context.messages),
+            },
+          }
+        );
+      }
+      
       // Build the synthesis prompt
       const synthesisPrompt = this.buildSynthesisPrompt(context);
 

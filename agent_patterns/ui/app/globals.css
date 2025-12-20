@@ -230,3 +230,10 @@ button:disabled {
   color: #e2e8f0;
   font-weight: 700;
 }
+.message-visualizations {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.1);
+}

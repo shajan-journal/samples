@@ -242,6 +242,12 @@ export class AgentOrchestrator {
     if (options.debug && step.metadata) {
       event.debug = this.extractDebugInfo(step.metadata);
     }
+    
+    // Check for visualization data in step metadata
+    if (step.metadata?.visualizations) {
+      event.visualizations = step.metadata.visualizations;
+      console.log('[Orchestrator] Including visualization data in event');
+    }
 
     return event;
   }

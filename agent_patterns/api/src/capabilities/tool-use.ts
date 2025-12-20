@@ -66,17 +66,41 @@ export class ToolUseCapability extends BaseCapability {
       // Execute tool calls
       const toolResults = await this.executeToolCalls(toolCalls, context.tools);
 
+      // Check if any tool result contains visualization data
+      const visualizations = this.extractVisualizations(toolResults);
+      
+      // Build metadata
+      const metadata: Record<string, any> = {
+        toolResults,
+        debug: debugInfo,
+      };
+      
+      // Add visualizations if present
+      if (visualizations) {
+        metadata.visualizations = visualizations;
+        console.log('[ToolUseCapability] Found visualization data in tool results');
+      }
+
       // Return results with tool calls
       return this.success(content, {
         toolCalls,
-        metadata: { 
-          toolResults,
-          debug: debugInfo,
-        }
+        metadata
       });
     } catch (error) {
       return this.error(`Tool use failed: ${(error as Error).message}`);
     }
+  }
+  
+  /**
+   * Extract visualization data from tool results
+   */
+  private extractVisualizations(toolResults: ToolResult[]): any | null {
+    for (const result of toolResults) {
+      if (result.success && result.data?.visualizations) {
+        return result.data.visualizations;
+      }
+    }
+    return null;
   }
 
   /**

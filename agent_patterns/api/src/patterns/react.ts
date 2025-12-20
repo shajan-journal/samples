@@ -128,6 +128,13 @@ export class ReActPattern extends BasePattern {
 
         const toolUseResult = await this.toolUseCapability.execute(toolUseContext);
 
+        // Store visualizations if present
+        if (toolUseResult.metadata?.visualizations) {
+          context.state = context.state || {};
+          context.state.visualizations = toolUseResult.metadata.visualizations;
+          console.log('[ReActPattern] Stored visualization data for synthesis');
+        }
+
         // Show debug info if available - include EVERYTHING
         if (verbose && toolUseResult.metadata?.debug) {
           const debug = toolUseResult.metadata.debug;

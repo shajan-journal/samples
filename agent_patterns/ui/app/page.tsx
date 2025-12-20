@@ -2,12 +2,14 @@
 
 import React, { FormEvent, useEffect, useMemo, useState, useRef } from 'react';
 import { streamExecution, ExecutionEvent } from '../lib/sse';
+import { VisualizationRenderer, VisualizationManifest } from '../lib/visualizations/VisualizationRenderer';
 
 type ChatMessage = {
   id: string;
   role: 'system' | 'user' | 'assistant';
   content: string;
   hint?: string;
+  visualizations?: VisualizationManifest;
 };
 
 type Session = {
@@ -122,6 +124,27 @@ export default function HomePage() {
     // Store the full event object
     setEvents((prev) => [...prev, event]);
 
+    // Check for visualization data in any step event
+    if (event.visualizations) {
+      console.log('[UI] Detected visualization data in event', event.visualizations);
+      
+      // Add visualization as a separate message
+      setMessages((prev) => {
+        // Remove thinking indicator if present
+        const withoutThinking = prev.filter(m => !m.id.includes('-thinking'));
+        
+        return [
+          ...withoutThinking,
+          {
+            id: `${runId}-viz-${Date.now()}`,
+            role: 'assistant',
+            content: 'Generated visualization:',
+            visualizations: event.visualizations
+          }
+        ];
+      });
+    }
+
     // Show final answer in chat when synthesis produces answer
     if (event.eventType === 'step' && event.data.type === 'answer') {
       // Remove thinking indicator and add actual answer
@@ -229,6 +252,11 @@ export default function HomePage() {
                         <span className="thinking-dots">{msg.content}</span>
                       ) : msg.content}
                     </div>
+                    {msg.visualizations && (
+                      <div className="message-visualizations">
+                        <VisualizationRenderer manifest={msg.visualizations} />
+                      </div>
+                    )}
                   </div>
                 ))
               )}

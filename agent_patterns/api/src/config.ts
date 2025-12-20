@@ -28,13 +28,23 @@ export interface Config {
  * Get application configuration from environment variables with defaults
  */
 export function getConfig(): Config {
+  const provider = (process.env.LLM_PROVIDER as any) || 'mock';
+  
+  // Try provider-specific key, then fallback to generic LLM_API_KEY
+  let apiKey = process.env.LLM_API_KEY;
+  if (!apiKey && provider === 'openai') {
+    apiKey = process.env.OPENAI_API_KEY;
+  } else if (!apiKey && provider === 'anthropic') {
+    apiKey = process.env.ANTHROPIC_API_KEY;
+  }
+  
   return {
     workspace: {
       baseDir: process.env.WORKSPACE_DIR || path.join(process.cwd(), 'workspace'),
     },
     llm: {
-      provider: (process.env.LLM_PROVIDER as any) || 'mock',
-      apiKey: process.env.LLM_API_KEY,
+      provider,
+      apiKey,
       model: process.env.LLM_MODEL || 'gpt-4',
       temperature: process.env.LLM_TEMPERATURE 
         ? parseFloat(process.env.LLM_TEMPERATURE) 

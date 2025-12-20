@@ -281,7 +281,7 @@ npm run test:tool -- node_execute '{"code":"console.log(Math.sqrt(16))","timeout
 
 ### Python Execution Tool
 
-Execute Python code in a subprocess with timeout.
+Execute Python code in a subprocess with timeout. **Supports automatic visualization detection** - creates charts and tables by generating manifest files.
 
 **Usage:**
 ```bash
@@ -290,14 +290,38 @@ npm run test:tool -- python_execute '{"code":"print(2 + 2)"}'
 
 # With custom timeout
 npm run test:tool -- python_execute '{"code":"import math\\nprint(math.sqrt(16))","timeout":5000}'
+
+# Test visualization detection
+npm run test:tool -- python_execute '{"code":"import json,csv\\ndata=[{\"x\":1,\"y\":2}]\\nwith open(\"data.csv\",\"w\") as f: csv.DictWriter(f,[\"x\",\"y\"]).writeheader();csv.DictWriter(f,[\"x\",\"y\"]).writerows(data)\\nwith open(\"visualization_manifest.json\",\"w\") as f: json.dump({\"version\":\"1.0\",\"outputs\":[{\"id\":\"c1\",\"type\":\"bar_chart\",\"title\":\"Test\",\"dataFile\":\"data.csv\",\"config\":{\"xColumn\":\"x\",\"yColumns\":[\"y\"]}}]},f)","workspaceDir":"./api/test-workspace"}'
 ```
 
 **Features:**
 - Spawns Python subprocess for execution
 - Captures stdout and stderr separately
 - Configurable timeout (default: 10000ms)
-- Tracks execution time
+- **Automatic visualization detection and parsing**
+- Supports workspace directory for file operations
 - Returns exit code and all output
+
+**Visualization Support:**
+When Python code creates these files in the workspace:
+1. `visualization_manifest.json` - Chart configuration
+2. `data.csv` or `data.json` - Data file
+
+The tool automatically:
+- Detects the manifest file
+- Validates the structure
+- Parses the data file
+- Includes visualization in the result
+
+**Supported chart types:** `table`, `line_chart`, `bar_chart`, `scatter`, `pie_chart`
+
+**Example visualization prompt (for ReAct pattern):**
+```
+Create a bar chart showing monthly sales: Jan=$10000, Feb=$12000, Mar=$15000
+```
+
+The LLM will generate Python code that creates the manifest and CSV files, which are automatically detected and rendered in the UI.
 
 **Requirements:**
 - Python 3.8+ must be installed
@@ -305,7 +329,7 @@ npm run test:tool -- python_execute '{"code":"import math\\nprint(math.sqrt(16))
 
 **Security Features:**
 - Directory traversal protection prevents access outside workspace
-- Automatically creates nested directories when needed
+- Python executes in specified workspace directory
 - Returns detailed error messages for debugging
 
 ## Testing
