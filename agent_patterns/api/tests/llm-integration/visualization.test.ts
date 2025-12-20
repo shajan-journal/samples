@@ -5,6 +5,7 @@
  * Requires OPENAI_API_KEY to be set.
  */
 
+import * as path from 'path';
 import {
   createTestOrchestrator,
   executeAndCollect,
@@ -14,6 +15,7 @@ import {
 
 describeIfApiKey('LLM Integration - Visualization Generation', () => {
   const orchestrator = createTestOrchestrator();
+  const testWorkspaceDir = path.join(__dirname, '../../test-workspace');
   
   const visualizationPrompt = `Create a bar chart showing Q1 2024 sales:
 - January: $45,000
@@ -22,7 +24,7 @@ describeIfApiKey('LLM Integration - Visualization Generation', () => {
 Use Python to generate the visualization.`;
 
   it('should generate visualization with ReAct pattern', async () => {
-    const result = await executeAndCollect(orchestrator, 'react', visualizationPrompt);
+    const result = await executeAndCollect(orchestrator, 'react', visualizationPrompt, testWorkspaceDir);
 
     expect(assertions.usedTool(result, 'python_execute')).toBe(true);
     expect(assertions.hasVisualizations(result)).toBe(true);
@@ -30,7 +32,7 @@ Use Python to generate the visualization.`;
   }, 60000);
 
   it('should generate visualization with PlanAndValidate pattern', async () => {
-    const result = await executeAndCollect(orchestrator, 'plan-and-validate', visualizationPrompt);
+    const result = await executeAndCollect(orchestrator, 'plan-and-validate', visualizationPrompt, testWorkspaceDir);
 
     expect(assertions.usedTool(result, 'python_execute')).toBe(true);
     expect(assertions.hasVisualizations(result)).toBe(true);
@@ -38,7 +40,7 @@ Use Python to generate the visualization.`;
   }, 60000);
 
   it('should generate visualization with IterativeRefinement pattern', async () => {
-    const result = await executeAndCollect(orchestrator, 'iterative-refinement', visualizationPrompt);
+    const result = await executeAndCollect(orchestrator, 'iterative-refinement', visualizationPrompt, testWorkspaceDir);
 
     expect(assertions.usedTool(result, 'python_execute')).toBe(true);
     expect(assertions.hasVisualizations(result)).toBe(true);

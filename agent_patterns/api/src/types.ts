@@ -169,6 +169,7 @@ export interface ExecutionOptions {
   debug?: boolean;
   visualizations?: boolean;
   messages?: Message[];  // Conversation history for multi-turn interactions
+  workspaceDir?: string;  // Directory for file operations and visualization generation
 }
 
 export interface DebugInfo {
@@ -190,30 +191,37 @@ export interface ExecutionEvent {
 // ============================================================================
 // Visualization Types
 // ============================================================================
+// IMPORTANT: These types implement the Visualization Contract.
+// See src/output/visualization-contract.ts for the complete specification.
 
 export interface VisualizationConfig {
   // For tables
   columns?: string[];
   maxRows?: number;
   
-  // For charts
-  xColumn?: string;
-  yColumn?: string | string[];
-  xLabel?: string;
-  yLabel?: string;
-  groupBy?: string;
+  // For charts - PLURAL FORM (arrays)
+  // NOTE: Python code must use yColumns (plural), not yColumn (singular)
+  xColumn?: string;           // Column name for X-axis
+  yColumns?: string[];        // PLURAL - array of column names for Y-axis
+  xLabel?: string;            // X-axis label
+  yLabel?: string;            // Y-axis label
+  groupBy?: string;           // Group by column
   
   // For pie charts
   labelColumn?: string;
   valueColumn?: string;
+  
+  // Allow extension for specific chart types
+  [key: string]: any;
 }
 
 export interface VisualizationOutput {
   id: string;
   type: 'table' | 'line_chart' | 'bar_chart' | 'scatter' | 'pie_chart';
   title?: string;
-  data: any[];  // Parsed CSV/JSON data
+  data: any[];                // REQUIRED: Parsed CSV/JSON data (NOT dataFile reference)
   config?: VisualizationConfig;
+  error?: string;             // Optional error from processing
 }
 
 export interface VisualizationManifest {

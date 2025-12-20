@@ -1,9 +1,13 @@
 # Agent Patterns Project - Developer Memory
 
+> **Note for AI Readers:** This is a **quick reference guide** for developers working on the project. It contains critical implementation details, gotchas, and design decisions. See [docs/current_state.md](current_state.md) for completion status and [docs/architecture.md](architecture.md) for design overview.
+
 ## Project Overview
 TypeScript/Node.js project exploring agentic AI patterns through composable capabilities. Focus on learning and experimentation, not production-grade implementation.
 
-## Current Status (Step 11 Complete, Step 12 Planning)
+## Current Status (Step 12 Complete, Step 13 Planning)
+
+**Completed Milestones:**
 - ✅ Core types and contracts
 - ✅ Basic tools (Calculator, FileSystem)
 - ✅ Code execution tools (NodeExecution, PythonExecution)
@@ -13,11 +17,10 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
 - ✅ Orchestrator (AgentOrchestrator)
 - ✅ API Layer (Express + SSE)
 - ✅ UI Layer (Next.js chat with split-panel debug view)
-- ✅ Refactoring (Error analysis, iteration state, pattern utils, conversation management)
-- ✅ Self-correcting patterns (IterativeRefinement, PlanAndValidate)
 - ✅ Multi-turn conversations with context retention
+- ✅ Self-correcting patterns (fully implemented)
 
-**Tests:** 311 passing (17 test suites)
+**Test Results:** 311 passing (17 test suites)  
 **Next Phase:** Visualization Support (see [next_step.md](next_step.md))
 
 ## Code Organization
@@ -25,9 +28,12 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
 ### Directory Structure
 ```
 /api                    # Backend workspace
-  /src with algorithmic detection
+  /src
+    /capabilities/     # Agent skills
+      base.ts          # BaseCapability abstract class + CapabilityRegistry
+      reasoning.ts     # Logical reasoning capability
       tool-use.ts      # Execute tools based on LLM decisions
-      synthesis.ts     # Combines information into coherent conclusions
+      synthesis.ts     # Combines information into conclusions
       validation.ts    # Validates outputs against criteria
       index.ts         # Exports
       
@@ -36,10 +42,7 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
       react.ts         # Reasoning + Acting loop pattern
       iterative-refinement.ts  # Generate → validate → refine loop
       plan-and-validate.ts     # Plan → execute → validate
-    /patterns/         # Orchestrated workflows
-      base.ts          # BasePattern abstract class + PatternRegistry
-      react.ts         # Reasoning + Acting loop pattern
-      utils.ts         # Shared pattern utilities (completion detection, convergence)
+      utils.ts         # Shared utilities (completion detection, convergence)
       index.ts         # Exports
       
     /tools/            # External functions
@@ -56,13 +59,13 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
       openai.ts        # OpenAIProvider with streaming
       index.ts         # Exports
       
-      # Planned for Step 12:
-      # file-parser.ts        # CSV/JSON parsing
-      # visualization-validator.ts  # Manifest validation
-      # workspace-manager.ts  # Centralized file operations
     /utils/            # Shared utilities
       error-analysis.ts # Error categorization and analysis
       conversation.ts   # Conversation management and pruning
+      # Planned for Step 13:
+      # file-parser.ts        # CSV/JSON parsing
+      # visualization-validator.ts  # Manifest validation
+      # workspace-manager.ts  # Centralized file operations
       
     /orchestrator/     # Main execution engine
       orchestrator.ts  # AgentOrchestrator class
@@ -78,51 +81,51 @@ TypeScript/Node.js project exploring agentic AI patterns through composable capa
     config.ts          # Environment variable management
 
   /scripts/            # CLI test utilities
-    test-tool.ts       # Test individual tools
-    test-llm.ts        # Test LLM providers
-    test-capability.ts # Test capabilities
-    test-pattern.ts    # Test patterns
-    test-orchestrator.ts # Test orchestrator
-    orchestrator/
-    api/
-    utils/
-    integration/
-    start-api.ts       # Start API server
+    test-tool.ts
+    test-llm.ts
+    test-capability.ts
+    test-pattern.ts
+    test-orchestrator.ts
+    start-api.ts
 
   /tests/              # Mirrors /src structure
     capabilities/
     patterns/
+    tools/
+    llm/
+    orchestrator/
+    api/
+    utils/
+    types.test.ts
+
+/ui                    # Frontend workspace (Next.js)
+  /app
     page.tsx           # Main chat interface with split-panel layout
     layout.tsx
     globals.css
-  /lib                 # UI utilities (SSE, etc.)
+  /lib
     sse.ts             # Server-Sent Events client
-    # Planned for Step 12:
+    # Planned for Step 13:
     # /visualizations/ # Chart components
-    llm/   # Product requirements
-  architecture.md      # Technical design
-  scenario.md          # Use cases and tools
-  current_state.md     # Implementation progress
-  next_step.md         # Next phase implementation plan
-  memory.md            # This file
-
-/workspace/            # Sandboxed directory for file operations
-/test-workspace/       # Separate workspace for test
-
-/ui                    # Frontend workspace (Next.js)
-  /app                 # Next.js app router
-  /lib                 # UI utilities (SSE, etc.)
   /__tests__           # Vitest tests
   package.json
   tsconfig.json
   vitest.config.ts
 
 /docs/                 # Documentation
-  prd.md            # Product requirements
-  architecture.md   # Technical design
-  scenario.md       # Use cases and tools
-  current_state.md  # Implementation progress
-  memory.md         # This file
+  architecture.md
+  current_state.md
+  getting-started.md
+  patterns.md
+  tools.md
+  config.md
+  testing.md
+  visualization-contract.md
+  contract-enforcement.md
+  prd.md
+  scenario.md
+  memory.md
+  next_step.md
 
 /workspace/            # Sandboxed directory for file operations
 
@@ -172,7 +175,25 @@ export class ReasoningCapability extends BaseCapability {
 ```
 
 ### 3. AsyncGenerator for Streaming
-**errorType?: 'syntax' | 'runtime' | 'timeout' | 'validation' | 'logical';
+**Pattern:** Patterns use async generators to yield steps progressively:
+
+```typescript
+async *execute(input: string, context: AgentContext): AsyncGenerator<PatternStep> {
+  yield this.createStep('reasoning', 'Thinking about the problem...');
+  const result = await this.llmProvider.chat([...]);
+  yield this.createStep('result', result.content);
+}
+```
+
+### 4. Result Objects with Success/Error States
+**Pattern:** Structured results with consistent error handling:
+
+```typescript
+interface ToolResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+  errorType?: 'syntax' | 'runtime' | 'timeout' | 'validation' | 'logical';
   errorDetails?: {
     message: string;
     lineNumber?: number;
@@ -192,7 +213,9 @@ interface CapabilityResult {
 interface ValidationResult extends CapabilityResult {
   isValid: boolean;
   validationIssues: string[];
-  suggestedFixes: string[]
+  suggestedFixes: string[];
+}
+```
 ```
 
 ### 4. Result Objects with Success/Error States
@@ -274,17 +297,7 @@ expect(result.metadata?.error).toBe(true);
 ### File System Security
 **Key:** All file operations are sandboxed to `WORKSPACE_DIR`:
 - Paths are normalized and validated
-- DIteration and Validation (for Self-Correcting Patterns)
-IterationState { attemptNumber, maxAttempts, previousAttempts, converged, startTime }
-AttemptHistory { attemptNumber, code?, result?, error?, timestamp, duration? }
-ValidationResult { isValid, validationIssues, suggestedFixes, ...CapabilityResult }
-ValidationCriteria { expectedOutput?, outputPattern?, shouldNotContain?, customValidator? }
-
-// Orchestrator
-ExecutionOptions { maxSteps?, timeout?, debug?, visualizations?, messages? }
-ExecutionEvent { timestamp, eventType, data, visualizations?, debug? }
-
-// irectory traversal (`../`) is blocked
+- Directory traversal (`../`) is blocked
 - Defaults to `./workspace` relative to project root
 
 ### Calculator Security
@@ -298,6 +311,38 @@ ExecutionEvent { timestamp, eventType, data, visualizations?, debug? }
 ### Core Interfaces (src/types.ts)
 
 ```typescript
+// Messages
+Message { role, content, name?, toolCallId? }
+
+// Tools
+Tool { name, description, parameters, execute() }
+ToolCall { id, name, arguments }
+ToolResult { success, data?, error?, metadata? }
+
+// Capabilities
+Capability { name, description, execute() }
+AgentContext { messages, tools, config, state?, iterationState? }
+CapabilityResult { output, toolCalls?, reasoning?, nextAction?, metadata? }
+
+// Patterns
+AgentPattern { name, description, execute() }
+PatternStep { type, capability?, tool?, content, metadata?, timestamp? }
+
+// LLM
+LLMProvider { chat(), chatWithTools() }
+LLMChunk { type, content?, toolCall?, usage?, finishReason? }
+LLMConfig { provider, model, temperature?, maxTokens?, stream?, apiKey? }
+
+// Iteration and Validation
+IterationState { attemptNumber, maxAttempts, previousAttempts, converged, startTime }
+AttemptHistory { attemptNumber, code?, result?, error?, timestamp, duration? }
+ValidationResult { isValid, validationIssues, suggestedFixes, ...CapabilityResult }
+ValidationCriteria { expectedOutput?, outputPattern?, shouldNotContain?, customValidator? }
+
+// Orchestrator
+ExecutionOptions { maxSteps?, timeout?, debug?, visualizations?, messages? }
+ExecutionEvent { timestamp, eventType, data, visualizations?, debug? }
+```
 // Messages
 Message { role, content, name?, toolCallId? }
 
@@ -621,6 +666,6 @@ Need to add/modify:
 
 ---
 
-**Last Updated:** Step 5 completed - ReAct pattern with ToolUse capability
-**Total Tests:** 143 passing
-**Next Milestone:** Orchestrator implementation
+**Last Updated:** December 19, 2025 - Step 12 completed (Self-correcting patterns)  
+**Total Tests:** 311 passing (17 test suites)  
+**Next Milestone:** Step 13 - Visualization Support (see [next_step.md](next_step.md))

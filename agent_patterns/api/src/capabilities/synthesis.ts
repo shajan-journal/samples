@@ -109,12 +109,24 @@ Review the entire conversation carefully, including:`;
     prompt += `\n- All assistant responses
 - The original user question
 
+OUTPUT CAPABILITIES:
+When creating your response, choose the appropriate format:
+- Text: Plain text responses for general answers
+- Code: Code blocks for programming-related content (use \`\`\` code blocks)
+- Visualization: Charts/plots via Python using CSV + manifest (use python_execution tool)
+- Tables: Structured data in markdown tables
+- JSON: Structured data output
+
+IMPORTANT: For visualizations, you MUST use the python_execution tool.
+Create a CSV data file and a visualization_manifest.json file - do NOT use matplotlib/plotly/seaborn.
+
 Your task:
 1. Identify the key information that answers the user's question
 2. Synthesize this information into a clear, concise final answer
 3. Provide ONLY the final answer - no meta-commentary, no explanation of your process
 4. Be direct and specific
 5. If the answer involves a calculation or data, state it clearly
+6. If visualization is needed and hasn't been created yet, you should have used python_execution tool earlier
 
 Format your response as a complete, standalone answer that directly addresses the user's question.`;
 

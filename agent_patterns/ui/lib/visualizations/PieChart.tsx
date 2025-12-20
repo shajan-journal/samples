@@ -28,21 +28,21 @@ export function PieChart({ output }: { output: VisualizationOutput }) {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
   
   return (
-    <div className="my-4 border border-gray-300 rounded-lg overflow-hidden">
+    <div className="w-full border border-gray-300 rounded-lg overflow-hidden dark:border-gray-700">
       {title && (
-        <div className="bg-gray-100 px-4 py-2 font-semibold border-b border-gray-300">
+        <div className="bg-gray-100 px-4 py-2 font-semibold border-b border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
           {title}
         </div>
       )}
-      <div className="p-4">
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="p-4 bg-white dark:bg-gray-900">
+        <ResponsiveContainer width="100%" height={400}>
           <RechartsPieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={(entry) => `${entry.name}: ${entry.value}`}
+              label={(entry: any) => `${entry.name}: ${entry.value}`}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"

@@ -12,7 +12,10 @@ import { PieChart } from './PieChart';
  * Dispatches to appropriate visualization component based on type
  */
 export function VisualizationRenderer({ manifest }: { manifest: VisualizationManifest }) {
+  console.log('[VisualizationRenderer] Received manifest:', manifest);
+  
   if (!manifest || !manifest.outputs || manifest.outputs.length === 0) {
+    console.warn('[VisualizationRenderer] Invalid manifest or no outputs');
     return null;
   }
   

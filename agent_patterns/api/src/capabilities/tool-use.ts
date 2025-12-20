@@ -64,7 +64,7 @@ export class ToolUseCapability extends BaseCapability {
       }
 
       // Execute tool calls
-      const toolResults = await this.executeToolCalls(toolCalls, context.tools);
+      const toolResults = await this.executeToolCalls(toolCalls, context.tools, context);
 
       // Check if any tool result contains visualization data
       const visualizations = this.extractVisualizations(toolResults);
@@ -114,6 +114,17 @@ export class ToolUseCapability extends BaseCapability {
 Available tools:
 ${context.tools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n')}
 
+OUTPUT CAPABILITIES:
+For different types of content, use the appropriate approach:
+- Visualizations (charts, plots, graphs): Use python_execution tool with CSV + manifest approach
+- Calculations: Use calculator or python_execution tool
+- File operations: Use file_system tool
+- Code execution: Use node_execution or python_execution tool
+- Text responses: No tool needed
+
+IMPORTANT: For visualizations, use python_execution tool to create CSV data file and visualization_manifest.json.
+Do NOT use matplotlib/plotly/seaborn - use the manifest approach described in the python_execution tool.
+
 When you need to use a tool, the system will execute it and provide you with the results.
 If you don't need any tools for the current step, just respond with your reasoning or final answer.`
     };
@@ -126,9 +137,11 @@ If you don't need any tools for the current step, just respond with your reasoni
    */
   private async executeToolCalls(
     toolCalls: ToolCall[],
-    tools: any[]
+    tools: any[],
+    context?: AgentContext
   ): Promise<ToolResult[]> {
     const results: ToolResult[] = [];
+    const workspaceDir = context?.state?.workspaceDir;
 
     for (const toolCall of toolCalls) {
       const tool = tools.find(t => t.name === toolCall.name);
@@ -142,7 +155,17 @@ If you don't need any tools for the current step, just respond with your reasoni
       }
 
       try {
-        const result = await tool.execute(toolCall.arguments);
+        // For python_execute tool, inject workspaceDir if available and not already provided
+        let toolArgs = toolCall.arguments;
+        if (tool.name === 'python_execute' && workspaceDir && !toolArgs.workspaceDir) {
+          toolArgs = {
+            ...toolArgs,
+            workspaceDir
+          };
+          console.log('[ToolUseCapability] Injected workspaceDir into python_execute:', workspaceDir);
+        }
+
+        const result = await tool.execute(toolArgs);
         results.push(result);
       } catch (error) {
         results.push({

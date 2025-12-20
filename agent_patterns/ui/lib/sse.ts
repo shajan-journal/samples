@@ -3,6 +3,17 @@ export type ExecutionEvent = {
   eventType: 'start' | 'step' | 'complete' | 'error' | 'visualization';
   data: any;
   debug?: any;
+  visualizations?: {
+    version: string;
+    outputs: Array<{
+      id: string;
+      type: 'table' | 'line_chart' | 'bar_chart' | 'scatter' | 'pie_chart';
+      title?: string;
+      config?: Record<string, any>;
+      data: any[];
+      error?: string;
+    }>;
+  };
 };
 
 export type ExecuteOptions = {

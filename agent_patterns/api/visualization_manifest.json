@@ -1,1 +1,1 @@
-{"version": "1.0", "outputs": [{"id": "chart1", "type": "bar_chart", "title": "Q1 2024 Sales", "dataFile": "data.csv", "config": {"xColumn": "month", "yColumns": ["sales"], "xLabel": "Month", "yLabel": "Sales ($)"}}]}
+{"version": "1.0", "outputs": [{"id": "sales_chart", "type": "bar_chart", "title": "Monthly Sales for Q1 2024", "dataFile": "sales_data.csv", "config": {"xColumn": "month", "yColumns": ["sales"], "xLabel": "Month", "yLabel": "Sales ($)"}}]}

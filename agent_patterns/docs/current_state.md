@@ -1,5 +1,7 @@
 # Implementation Status
 
+> **Note for AI Readers:** This document describes **what has been completed to date** in this project. For the overall architectural design and what's planned, see [docs/architecture.md](architecture.md). This reflects the current reality of the implementation.
+
 ## Testing Directive
 
 **CRITICAL**: At every implementation step, create a test mechanism to verify the implementation is working correctly. Use mocks where dependencies are not yet implemented. Each step must be testable in isolation before proceeding to the next.
@@ -290,56 +292,27 @@
 ### 9. Code Execution Tools
 **Status**: ✅ Completed
 
-**Rationale**: Code execution tools unlock advanced agentic patterns (iterative refinement, self-correction, data analysis loops) that can't be demonstrated with basic tools. Simple sandbox approach for learning/exploration.
-
 **Tasks:**
-- ✅ Implement NodeExecutionTool (simple vm-based sandbox)
-  - Use vm.Script for sandboxing
-  - Built-in timeout and memory limits
-  - Capture stdout/stderr and expression results
-  - No external package installation
-- ✅ Implement PythonExecutionTool (subprocess-based sandbox)
-  - Execute Python code in subprocess with timeout
-  - Capture stdout/stderr with proper error handling
-  - **Auto-wrap expressions**: Automatically detects simple expressions and wraps in print() for output
-  - No external package installation (uses system Python)
-- ✅ Add comprehensive tests for both tools
-- ✅ Register tools in server startup
+- ✅ Implement NodeExecutionTool (vm-based sandbox)
+- ✅ Implement PythonExecutionTool (subprocess-based)
+- ✅ Add comprehensive tests
+- ✅ Register tools in server
 
 **Implementation Details:**
-- NodeExecutionTool: Returns expression results directly (e.g., `"hello".split("").reverse().join("")` returns reversed string)
-- PythonExecutionTool: `wrapCodeForOutput()` method automatically wraps expressions like `"string"[::-1]` in `print()` to capture output
-- Both tools have configurable timeouts and comprehensive error handling
-- 20 passing tests for NodeExecutionTool
-- 20 passing tests for PythonExecutionTool
+- Created `/src/tools/node-execution.ts` with NodeExecutionTool (20 tests)
+- Created `/src/tools/python-execution.ts` with PythonExecutionTool (20 tests)
+- Both tools support configurable timeouts and error handling
 - All 216 tests passing across all test suites
 
 ---
 
-### 10. Multi-Turn Conversations
+### 10. Multi-Turn Conversations & Enhanced UI
 **Status**: ✅ Completed
 
 **Tasks:**
 - ✅ Add conversation history support to ExecutionOptions
 - ✅ Update API routes to accept messages array
 - ✅ Update orchestrator to pass messages to patterns
-- ✅ Update UI to track and send conversation history
-- ✅ Test multi-turn conversations with context retention
-
-**Implementation Details:**
-- Added `messages?: Message[]` to ExecutionOptions type
-- API route now accepts and forwards messages array
-- Orchestrator initializes context with conversation history
-- UI tracks all user/assistant messages and includes them in subsequent requests
-- Enables true multi-turn conversations where agent remembers prior context
-- Tested with follow-up questions successfully maintaining context
-
----
-
-### 11. Enhanced UI Features
-**Status**: ✅ Completed
-
-**Tasks:**
 - ✅ Implement split-panel layout (chat + logs)
 - ✅ Add expandable event viewer with full JSON details
 - ✅ Add download logs functionality
@@ -348,167 +321,33 @@
 - ✅ Session tracking with turn counter
 
 **Implementation Details:**
-- Chat area now takes 50% width when logs panel is visible
+- Added `messages?: Message[]` to ExecutionOptions type
+- API route now accepts and forwards messages array
+- Orchestrator initializes context with conversation history
+- UI tracks all user/assistant messages and includes them in subsequent requests
+- Chat area takes 50% width when logs panel is visible
 - Logs panel shows event summaries with click-to-expand for full JSON
 - Download button exports all events as timestamped JSON file
-- Removed onClick from JSON content area to enable text selection
-- Changed layout max-width from 960px to 100% for full screen
 - All events stored as full ExecutionEvent objects with complete metadata
-- ✅ Implement PythonExecutionTool (simple subprocess-based)
-  - Spawn python subprocess with timeout
-  - Capture stdout/stderr and return code
-  - File output capture (CSV, JSON, images)
-
-**Testing:**
-- ✅ Unit tests for NodeExecutionTool
-  - Test sandboxing and isolation
-  - Test timeout enforcement
-  - Test memory limits
-  - Test scripts: `npm run test:tool -- node_execute "console.log('hello')"`
-- ✅ Unit tests for PythonExecutionTool
-  - Test code execution and output capture
-  - Test stdout/stderr capture
-  - Test timeout enforcement
-  - Test error handling
-  - Test scripts: `npm run test:tool -- python_execute "print('hello')"`
-
-**Implementation Details:**
-- Created `/src/tools/node-execution.ts` with NodeExecutionTool
-  - Uses Node.js vm module for sandboxed execution
-  - Captures console.log/error/warn/info output
-  - Disables require, process, setTimeout, setInterval for safety
-  - Configurable timeout (default: 5000ms)
-  - Returns result value, stdout, and stderr
-  - 21 passing tests
-- Created `/src/tools/python-execution.ts` with PythonExecutionTool
-  - Spawns Python subprocess with child_process
-  - Creates temporary files for code execution
-  - Captures stdout and stderr streams
-  - Enforces timeout with SIGTERM → SIGKILL escalation
-  - Tracks execution time
-  - Returns stdout, stderr, return code, and execution time
-  - 20 passing tests
-- Added exports to `/src/tools/index.ts`
-- All 208 tests passing (41 new tests added)
+- All 289 tests passing (73 new tests added)
 
 ---
 
-### 10. Self-Correcting Patterns (Enabled by Code Execution)
-**Status**: Not Started
-
-**Rationale**: With code execution, we can demonstrate patterns that iterate on failures - a key capability of advanced agents.
-
-**Tasks:**
-- Implement IterativeRefinementPattern
-  - Generate code → Execute → Analyze errors → Refine → Repeat
-  - Demonstrates self-correction based on execution feedback
-- Implement PlanAndValidatePattern
-  - Plan approach → Generate code → Execute tests → Fix issues
-  - Shows test-driven development pattern
-- Add ValidationCapability
-  - Checks code execution results against expected outcomes
-  - Identifies errors and suggests corrections
-
-**Testing:**
-- Test iterative refinement with intentionally buggy code prompts
-- Test convergence to correct solution
-- Test max iteration limits
-- Integration test: "Write Python code to calculate factorial" → self-correcting loop
-- Test scripts: `npm run test:pattern -- iterative-refinement "Generate function with bug"`
-
----
-
-### 11. Visualization
-**Status**: Not Started
-
-**Tasks:**
-- Update PythonExecutionTool to detect visualization outputs
-- Implement data file reading (CSV, JSON)
-- Add visualization components (Table, Chart renderers)
-- Integrate with chat UI to display execution results
-
-**Testing:**
-- Unit tests for data parsing
-- Component tests for each visualization type
-- Test with mock data
-- Integration test: Python code → data output → UI rendering
-- Test scripts: `npm run test:tool -- python_execute "import pandas; df.to_csv('output.csv')"`
-
----
-
-### 12. Additional Patterns & Capabilities
-**Status**: Not Started
-
-**Tasks:**
-- Implement PlanningCapability (breaks tasks into steps)
-- Implement ReflectionCapability (analyzes past actions)
-- Implement Plan-Execute pattern (plan upfront, execute sequentially)
-- Implement Reflection pattern (generate → critique → refine)
-- Implement Tree-of-Thoughts pattern (explore multiple paths)
-- Implement EnsemblePattern (run multiple approaches, aggregate)
-
-**Testing:**
-- Unit tests for each capability
-- Unit tests for each pattern
-- Integration tests showing pattern differences
-- Test scripts for each: `npm run test:pattern -- plan-execute "Complex task"`
-
----
-
-### 13. UI Enhancements & Testing
-**Status**: Not Started
-
-**Tasks:**
-- Add UI debug view (prompts, tool calls, tokens, timing)
-- Add execution history and replay
-- Create comprehensive test suite
-- Add integration tests for full workflows
-- Add example prompts and expected outputs
-- Performance and load testing
-
-**Testing:**
-- Component tests for debug panel
-- Run full test suite: `npm test`
-- Run integration tests: `npm run test:integration`
-- Performance testing for streaming
-- Load testing for API endpoints
-
----
-
----
-
-### 10. Refactoring for Self-Correcting Patterns
+### 11. Refactoring for Self-Correcting Patterns
 **Status**: ✅ Completed
 
-**Rationale**: Before implementing self-correcting patterns, foundational utilities and types were needed to support error analysis, iteration tracking, and validation logic.
+**Rationale**: Foundational utilities and types for error analysis, iteration tracking, and validation
 
 **Tasks:**
 - ✅ Create error analysis utilities module
 - ✅ Add iteration state types and interfaces
-- ✅ Enhance tool result structures with error metadata
 - ✅ Extract completion detection to shared utils
 - ✅ Create conversation management utilities
-- ✅ Add comprehensive tests for all new utilities
 
 **Implementation Details:**
-- Created `/src/utils/error-analysis.ts` with comprehensive error analysis
-  - Categorizes errors (syntax, runtime, timeout, logical)
-  - Extracts error messages, line numbers, and stack traces
-  - Suggests context-aware fixes
-  - Detects error convergence and similarity
-  - 25 passing tests
-- Created `/src/utils/conversation.ts` for conversation management
-  - Summarizes previous attempts
-  - Prunes old messages to manage context size
-  - Extracts relevant context based on token limits
-  - Identifies learnings from failed attempts
-  - 23 passing tests
-- Created `/src/patterns/utils.ts` for shared pattern utilities
-  - Extracted completion detection from ReActPattern
-  - Added convergence checking for iterative patterns
-  - Success rate calculation and best attempt selection
-  - Iteration control logic
-  - 25 passing tests
+- Created `/src/utils/error-analysis.ts` (25 tests)
+- Created `/src/utils/conversation.ts` for conversation management (23 tests)
+- Created `/src/patterns/utils.ts` for shared pattern utilities (25 tests)
 - Added new types to `/src/types.ts`:
   - `IterationState` - Tracks attempts and convergence
   - `AttemptHistory` - Records each iteration attempt
@@ -517,85 +356,62 @@
   - `ToolExecutionContext` - Tracks tool execution metadata
 - Enhanced `ToolResult` with `errorType` and `errorDetails`
 - Enhanced `AgentContext` with optional `iterationState`
-- All 289 tests passing (73 new tests added)
+- All 289 tests passing
 
 ---
 
-### 11. Self-Correcting Patterns Implementation
+### 12. Self-Correcting Patterns Implementation
 **Status**: ✅ Completed
 
-**Rationale**: Implement intelligent validation and iterative refinement capabilities to enable agents to detect and fix errors automatically.
+**Rationale**: Enable agents to detect and fix errors automatically through validation and iterative refinement
 
 **Completed Tasks:**
 - ✅ Implement ValidationCapability (22 tests)
-  - Analyzes code execution results with error-analysis utilities
-  - Supports validation against custom criteria and LLM-based validation
+  - Analyzes code execution results
+  - Supports custom criteria and LLM-based validation
   - Located in `/src/capabilities/validation.ts`
   
 - ✅ Implement IterativeRefinementPattern (2 tests)
-  - Generate → execute (Node/Python) → validate → analyze errors → refine → repeat
-  - Uses ValidationCapability, utils/error-analysis, utils/conversation, patterns/utils
-  - Tracks iterationState and records attempts with metadata
-  - Detects convergence and prevents infinite loops
+  - Generate → execute → validate → analyze → refine → repeat
+  - Uses ValidationCapability, error-analysis, and convergence detection
   - Located in `/src/patterns/iterative-refinement.ts`
-  - Key features:
-    - Progressive streaming of steps via AsyncGenerator
-    - Validation-gated iteration with feedback loops
-    - Max attempt caps and convergence detection
-    - Full debug metadata collection
   
 - ✅ Implement PlanAndValidatePattern (7 tests)
   - Plan → Execute Steps → Validate → Refine
-  - Lightweight planning step followed by step-wise execution
-  - Validates each step and triggers refinement on failure
-  - Supports optional re-validation after refinement
+  - Lightweight planning with step-wise execution and validation gating
   - Located in `/src/patterns/plan-and-validate.ts`
-  - Key features:
-    - Parses numbered plan into Step objects
-    - Executes each step with tool-use and validation gates
-    - Feeds validation feedback for refinement iterations
-    - Reports completion summary with step metrics
-  - **Known limitation:** ValidationCapability simply inspects the latest tool output; it does not request additional tool calls, so validation steps in the plan must already contain executable tool usage if code-based verification is required.
 
-**Test Results**: 321 tests passing (9 self-correcting tests added)
-- All ValidationCapability tests passing (22)
-- All IterativeRefinementPattern tests passing (2)
-- All PlanAndValidatePattern tests passing (7)
-- No regressions in existing tests
+**Test Results**: 311 tests passing (17 test suites)
 
-**Files Modified/Created:**
+**Files Created:**
 - ✅ `/src/patterns/iterative-refinement.ts` - IterativeRefinementPattern
 - ✅ `/src/patterns/plan-and-validate.ts` - PlanAndValidatePattern
-- ✅ `/src/patterns/index.ts` - Export both new patterns
-- ✅ `/scripts/test-pattern.ts` - Added support for new patterns
-- ✅ `/scripts/start-api.ts` - Register both patterns with orchestrator
-- ✅ `/tests/patterns/iterative-refinement.test.ts` - Tests for iterative refinement
-- ✅ `/tests/patterns/plan-and-validate.test.ts` - Tests for plan-and-validate
-  - Metadata and metrics tracking
-  - Edge cases and error handling
-
-**Files Modified/Created:**
-- ✅ `/src/capabilities/validation.ts` - New ValidationCapability implementation
-- ✅ `/src/capabilities/index.ts` - Export ValidationCapability
-- ✅ `/tests/capabilities/validation.test.ts` - Comprehensive test suite
-
+- ✅ `/src/capabilities/validation.ts` - ValidationCapability
+- ✅ Comprehensive tests for all new patterns and capabilities**
+- Chat area now takes 50% width when logs panel is visible
+- Logs panel shows event summaries with click-to-expand for full JSON
+- Download button exports all events as timestamped JSON file
+- Removed onClick from JSON content area to enable text selection
+- Changed layout max-width from 960px to 100% for full screen
+- All events stored as full ExecutionEvent objects with complete metadata
 ---
 
 ## Current Status Summary
 
-**Completed Steps**: 10/13 (plus partial Step 11)  
-**In Progress**: Step 11 (ValidationCapability complete, remaining patterns pending)  
+**Completed**: Step 12 (Self-Correcting Patterns fully implemented)  
+**Current Phase**: Step 13 (Visualization Support) - Planning complete  
 **Blocked**: None  
 
-**Test Results**: 311 tests passing
-- Types: Tests passing
-- Tools (Calculator + FileSystem + NodeExecution + PythonExecution): Tests passing
-- LLM Providers (Mock + OpenAI): Tests passing
-- Capabilities (Reasoning + ToolUse + Synthesis + Validation): Tests passing
-- Patterns (ReAct): Tests passing
-- Orchestrator: Tests passing
-- API: Tests passing
-- Utils (Error Analysis + Conversation + Pattern Utils): Tests passing
+**Test Results**: 311 tests passing (17 test suites)
+- Core Types: ✅ Passing
+- Tools (4): ✅ Passing (Calculator, FileSystem, NodeExecution, PythonExecution)
+- LLM Providers (2): ✅ Passing (Mock, OpenAI)
+- Capabilities (4): ✅ Passing (Reasoning, ToolUse, Synthesis, Validation)
+- Patterns (3): ✅ Passing (ReAct, IterativeRefinement, PlanAndValidate)
+- Orchestrator: ✅ Passing
+- API Layer: ✅ Passing
+- UI Layer: ✅ Passing
+- Utilities (3): ✅ Passing (Error Analysis, Conversation, Pattern Utils)
 
 ## Next Action
 

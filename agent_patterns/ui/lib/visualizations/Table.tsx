@@ -20,7 +20,7 @@ export interface VisualizationConfig {
   
   // For charts
   xColumn?: string;
-  yColumn?: string | string[];
+  yColumns?: string[];        // PLURAL - array format per visualization contract
   xLabel?: string;
   yLabel?: string;
   groupBy?: string;
@@ -28,6 +28,9 @@ export interface VisualizationConfig {
   // For pie charts
   labelColumn?: string;
   valueColumn?: string;
+  
+  // Allow additional properties for extensibility
+  [key: string]: any;
 }
 
 export interface VisualizationManifest {

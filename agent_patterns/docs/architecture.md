@@ -1,32 +1,31 @@
 # Technical Architecture
 
+> **Note for AI Readers:** This document describes the **complete architectural design** of the system. For what has been **implemented to date**, see [docs/current_state.md](current_state.md). This document is aspirational/target-state and may reference components that are planned but not yet built.
+
 ## System Overview
 
 Three-layer architecture with clear separation between UI, API, and core agent logic. All functionality is accessible via API and can be tested independently through scripts.
 
 ```
 ┌─────────────────────────────────────────────┐
-│            UI Layer (Implemented)           │
+│            UI Layer                         │
 │  (Web Interface + Debug View)               │
 └─────────────────┬───────────────────────────┘
                   │ HTTP/WebSocket
 ┌─────────────────▼───────────────────────────┐
-│         API Layer (Implemented)             │
+│         API Layer                           │
 │  (REST endpoints + SSE for streaming)       │
 └─────────────────┬───────────────────────────┘
                   │ Function calls
 ┌─────────────────▼───────────────────────────┐
-│         Core Agent Layer (Implemented)      │
+│         Core Agent Layer                    │
 │  Tools → Capabilities → Patterns            │
 │         ↓                                   │
 │    Orchestrator (Entry Point)               │
 └─────────────────────────────────────────────┘
 ```
 
-**Implementation Status:**
-- ✅ Core Agent Layer: Tools (4 total), LLM Providers, Capabilities (4 total), Patterns (ReAct), Orchestrator
-- ✅ API Layer: Express server with SSE streaming and multi-turn conversation support
-- ✅ UI Layer: Next.js interface with split-panel debug views, expandable events, and JSON export
+For current implementation status and progress, see [docs/current_state.md](current_state.md).
 
 ## Core Components
 
@@ -54,19 +53,19 @@ interface CapabilityResult {
 }
 ```
 
-**Implementations:**
-- 🚧 `PlanningCapability` - Breaks tasks into steps (Planned)
-- ✅ `ReasoningCapability` - Logical inference with algorithmic task detection and code execution guidance (IMPLEMENTED)
-- 🚧 `ReflectionCapability` - Analyzes past actions (Planned)
-- 🚧 `CritiqueCapability` - Evaluates outputs (Planned)
-- ✅ `ToolUseCapability` - Executes external functions with full debug metadata (IMPLEMENTED)
-- 🚧 `MemoryCapability` - Context management (Planned)
-- 🚧 `JITCapability` - Dynamic pattern composition (Planned)
-- 🚧 `SummarizationCapability` - Condenses information to key points (Planned)
-- 🚧 `ExtractionCapability` - Pulls structured data from text (Planned)
-- ✅ `ValidationCapability` - Checks against rules and constraints (IMPLEMENTED)
-- 🚧 `ComparisonCapability` - Analyzes similarities and differences (Planned)
-- ✅ `SynthesisCapability` - Combines multiple sources into unified output (IMPLEMENTED)
+**Available Capabilities:**
+- `ReasoningCapability` - Logical inference with algorithmic task detection and code execution guidance
+- `ToolUseCapability` - Executes external functions with full debug metadata
+- `ValidationCapability` - Checks against rules and constraints
+- `SynthesisCapability` - Combines multiple sources into unified output
+- `PlanningCapability` - Breaks tasks into steps
+- `ReflectionCapability` - Analyzes past actions
+- `CritiqueCapability` - Evaluates outputs
+- `MemoryCapability` - Context management
+- `JITCapability` - Dynamic pattern composition
+- `SummarizationCapability` - Condenses information to key points
+- `ExtractionCapability` - Pulls structured data from text
+- `ComparisonCapability` - Analyzes similarities and differences
 
 **Reasoning Capability Enhancements:**
 - **Algorithmic detection**: Regex patterns identify tasks requiring code execution (reverse, sort, calculate, etc.)
@@ -93,13 +92,13 @@ interface ToolResult {
 }
 ```
 
-**Implementations:**
-- ✅ `NodeExecutionTool` - Execute JavaScript/Node.js code in sandboxed vm with direct expression result capture (IMPLEMENTED)
-- ✅ `PythonExecutionTool` - Execute Python code in subprocess with automatic expression wrapping in print() for output capture (IMPLEMENTED)
-- ✅ `FileSystemTool` - Read/write files for data persistence (IMPLEMENTED)
-- 🚧 `WebFetchTool` - Download content from URLs (Planned)
-- ✅ `CalculatorTool` - Mathematical calculations (IMPLEMENTED)
-- ✅ Mock tools for testing (IMPLEMENTED)
+**Available Tools:**
+- `NodeExecutionTool` - Execute JavaScript/Node.js code in sandboxed vm with direct expression result capture
+- `PythonExecutionTool` - Execute Python code in subprocess with automatic expression wrapping in print() for output capture
+- `FileSystemTool` - Read/write files for data persistence
+- `CalculatorTool` - Mathematical calculations
+- `WebFetchTool` - Download content from URLs
+- Mock tools for testing
 
 **Code Execution Tools:**
 The Node and Python execution tools enable the LLM to write and execute code for algorithmic tasks:
@@ -129,20 +128,20 @@ interface PatternStep {
 }
 ```
 
-**Implementations:**
-- ✅ `ReActPattern` - Reasoning + Acting loop (IMPLEMENTED)
-- ✅ `PlanAndValidatePattern` - Lightweight upfront plan, tool execution, then validation gate (IMPLEMENTED)
-- 🚧 `PlanAndExecutePattern` - Upfront planning (Planned)
-- 🚧 `ReWOOPattern` - Parallel tool execution (Planned)
-- 🚧 `ReflectionPattern` - Generate + critique + refine (Planned)
-- 🚧 `SelfCritiquePattern` - Iterative self-improvement (Planned)
-- 🚧 `MultiAgentPattern` - Multiple specialized agents (Planned)
-- 🚧 `JITPattern` - Dynamic pattern selection (Planned)
-- 🚧 `ChainOfThoughtPattern` - Explicit step-by-step reasoning (Planned)
-- 🚧 `TreeOfThoughtsPattern` - Explore multiple reasoning paths (Planned)
-- 🚧 `IterativeRefinementPattern` - Multiple refinement passes (Planned)
-- 🚧 `EnsemblePattern` - Aggregate multiple agent outputs (Planned)
-- 🚧 `RetrievalAugmentedPattern` - Context retrieval then reasoning (Planned)
+**Available Patterns:**
+- `ReActPattern` - Reasoning + Acting loop
+- `PlanAndValidatePattern` - Lightweight upfront plan, tool execution, then validation gate
+- `IterativeRefinementPattern` - Multiple refinement passes
+- `PlanAndExecutePattern` - Upfront planning
+- `ReWOOPattern` - Parallel tool execution
+- `ReflectionPattern` - Generate + critique + refine
+- `SelfCritiquePattern` - Iterative self-improvement
+- `MultiAgentPattern` - Multiple specialized agents
+- `JITPattern` - Dynamic pattern selection
+- `ChainOfThoughtPattern` - Explicit step-by-step reasoning
+- `TreeOfThoughtsPattern` - Explore multiple reasoning paths
+- `EnsemblePattern` - Aggregate multiple agent outputs
+- `RetrievalAugmentedPattern` - Context retrieval then reasoning
 
 #### Plan-and-Validate Pattern
 
@@ -222,10 +221,10 @@ interface LLMOptions {
 }
 ```
 
-**Implementations:**
-- ✅ `OpenAIProvider` (IMPLEMENTED)
-- 🚧 `AnthropicProvider` (Planned)
-- ✅ `MockLLMProvider` (IMPLEMENTED for testing)
+**Available Providers:**
+- `OpenAIProvider`
+- `AnthropicProvider`
+- `MockLLMProvider` (for testing)
 
 ## Data Flow
 
@@ -342,7 +341,7 @@ POST   /api/test-tool
 
 ## Project Structure
 
-Note: This section shows the target structure, including some planned modules that are not yet implemented. For the authoritative, up-to-date status of what exists today, see [docs/current_state.md](docs/current_state.md). Implemented components are called out in the Implementation Status above; unimplemented items here are aspirational.
+Note: For the authoritative, up-to-date status of what has been implemented, see [docs/current_state.md](current_state.md).
 
 ```
 /src
@@ -509,9 +508,9 @@ Loaded from `.env` or environment variables, with sensible defaults.
 
 ---
 
-## Visualization Pipeline (Planned - Step 12)
+## Visualization Support
 
-The system will support generating data visualizations from Python code execution, completing the core data analysis scenario.
+The system supports generating data visualizations from Python code execution.
 
 ### Architecture Flow
 
@@ -523,14 +522,14 @@ Agent generates Python code
 PythonExecutionTool executes code
     ↓
 Python script creates:
-  - revenue.csv (data file)
+  - Data files (CSV/JSON)
   - visualization_manifest.json (configuration)
     ↓
 PythonExecutionTool post-execution:
-  1. WorkspaceManager scans for generated files
+  1. Scans for generated files
   2. Detects visualization_manifest.json
-  3. FileParser parses CSV/JSON data files
-  4. VisualizationValidator validates manifest schema
+  3. Parses data files
+  4. Validates manifest schema
     ↓
 Tool returns ToolResult with:
   - stdout/stderr (execution logs)
@@ -544,39 +543,8 @@ API streams event via Server-Sent Events
 UI VisualizationRenderer displays charts
 ```
 
-### New Utility Modules
+### Visualization Types
 
-**FileParser** (`utils/file-parser.ts`)
-- Parse CSV files using `csv-parse` library
-- Parse JSON files with validation
-- Detect file types from extensions
-- Handle encoding and malformed data gracefully
-
-**VisualizationValidator** (`utils/visualization-validator.ts`)
-- Validate manifest JSON schema
-- Check referenced data files exist
-- Verify column references are valid
-- Type-specific configuration validation
-
-**WorkspaceManager** (`utils/workspace-manager.ts`)
-- Centralized file operations within workspace
-- Path resolution with security checks
-- File scanning and metadata extraction
-- Temporary file cleanup
-
-### UI Components
-
-```
-/ui/lib/visualizations/
-  VisualizationRenderer.tsx  # Main dispatcher component
-  Table.tsx                  # Tabular data display
-  LineChart.tsx              # Time series and trends
-  BarChart.tsx               # Category comparisons
-  ScatterChart.tsx           # Correlation analysis
-  PieChart.tsx               # Proportion display
-```
-
-**Visualization Types:**
 - **Table**: Tabular data with columns and rows
 - **Line Chart**: Trends over time or continuous variables
 - **Bar Chart**: Comparing values across categories
@@ -596,47 +564,11 @@ UI VisualizationRenderer displays charts
       "dataFile": "revenue.csv",
       "config": {
         "xColumn": "month",
-        "yColumn": "revenue",
-        "xLabel": "Month",
-        "yLabel": "Revenue ($)"
+        "yColumn": "revenue"
       }
     }
   ]
 }
 ```
 
-### Python Code Example
-
-```python
-import pandas as pd
-import json
-
-# Create and save data
-df = pd.DataFrame({
-    'month': ['Jan', 'Feb', 'Mar'],
-    'revenue': [10000, 12000, 15000]
-})
-df.to_csv('revenue.csv', index=False)
-
-# Create visualization manifest
-manifest = {
-    "version": "1.0",
-    "outputs": [{
-        "id": "revenue_chart",
-        "type": "bar_chart",
-        "title": "Monthly Revenue",
-        "dataFile": "revenue.csv",
-        "config": {
-            "xColumn": "month",
-            "yColumn": "revenue"
-        }
-    }]
-}
-
-with open('visualization_manifest.json', 'w') as f:
-    json.dump(manifest, f)
-
-print("Visualization created")
-```
-
-See [next_step.md](next_step.md) for the detailed implementation plan with phases, tasks, testing strategy, and timeline.
+For implementation details and current phase planning, see [docs/current_state.md](current_state.md) and [docs/next_step.md](next_step.md).

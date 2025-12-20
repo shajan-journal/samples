@@ -88,7 +88,8 @@ export function createFullOrchestrator(apiKey?: string): AgentOrchestrator {
 export async function executeAndCollect(
   orchestrator: AgentOrchestrator,
   patternName: string,
-  prompt: string
+  prompt: string,
+  workspaceDir?: string
 ): Promise<EventCollector> {
   const collector: EventCollector = {
     events: [],
@@ -98,7 +99,9 @@ export async function executeAndCollect(
     errors: []
   };
 
-  for await (const event of orchestrator.executePattern(patternName, prompt)) {
+  const executionOptions: any = { workspaceDir };
+
+  for await (const event of orchestrator.executePattern(patternName, prompt, executionOptions)) {
     collector.events.push(event);
 
     // Collect tool usage

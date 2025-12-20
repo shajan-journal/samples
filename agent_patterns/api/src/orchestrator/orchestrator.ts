@@ -214,7 +214,8 @@ export class AgentOrchestrator {
       config: this.defaultConfig,
       state: {
         debug: options.debug || false,
-        visualizations: options.visualizations || false
+        visualizations: options.visualizations || false,
+        workspaceDir: options.workspaceDir // Pass workspace directory to context
       }
     };
   }
@@ -246,7 +247,11 @@ export class AgentOrchestrator {
     // Check for visualization data in step metadata
     if (step.metadata?.visualizations) {
       event.visualizations = step.metadata.visualizations;
-      console.log('[Orchestrator] Including visualization data in event');
+      console.log('[Orchestrator] Including visualization data in event', {
+        hasOutputs: !!event.visualizations?.outputs,
+        outputCount: event.visualizations?.outputs?.length || 0,
+        firstOutputHasData: !!event.visualizations?.outputs?.[0]?.data
+      });
     }
 
     return event;

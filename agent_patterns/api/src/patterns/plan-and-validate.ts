@@ -156,6 +156,15 @@ Format:
         continue;
       }
 
+      // Check if visualizations were generated and update context state
+      if (stepResult.metadata?.visualizations) {
+        if (!context.state) {
+          context.state = {};
+        }
+        context.state.visualizations = stepResult.metadata.visualizations;
+        console.log('[PlanAndValidatePattern] Captured visualization data from tool execution');
+      }
+
       const stepOutput = this.deriveToolOutput(stepResult);
       yield this.createStep('info', `STEP ${step.number} RESULT: ${stepOutput}`, {
         metadata: { stepNumber: step.number }
@@ -328,7 +337,16 @@ Format:
       yield this.createStep('info', `Execution summary: ${completedCount}/${totalSteps} steps completed`);
     }
     
-    yield this.createStep('answer', synthesis.output);
+    // Extract visualizations from synthesis metadata if present
+    const answerMetadata: any = {};
+    if (synthesis.metadata?.visualizations) {
+      answerMetadata.visualizations = synthesis.metadata.visualizations;
+      console.log('[PlanAndValidatePattern] Including visualization data in final answer step');
+    }
+    
+    yield this.createStep('answer', synthesis.output, {
+      metadata: Object.keys(answerMetadata).length > 0 ? answerMetadata : undefined
+    });
   }
 
   private describeTools(tools?: Tool[]): string {

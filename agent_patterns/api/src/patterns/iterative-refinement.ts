@@ -89,6 +89,15 @@ export class IterativeRefinementPattern extends BasePattern {
 
       // If tools were called, reflect them in the conversation and steps
       if (toolUseResult.toolCalls && toolUseResult.toolCalls.length > 0) {
+        // Check if visualizations were generated and update context state
+        if (toolUseResult.metadata?.visualizations) {
+          if (!context.state) {
+            context.state = {};
+          }
+          context.state.visualizations = toolUseResult.metadata.visualizations;
+          console.log('[IterativeRefinementPattern] Captured visualization data from tool execution');
+        }
+
         // Assistant message with tool_calls
         messages.push({
           role: 'assistant',
@@ -179,6 +188,15 @@ export class IterativeRefinementPattern extends BasePattern {
       return;
     }
 
-    yield this.createStep('answer', synthesis.output);
+    // Extract visualizations from synthesis metadata if present
+    const answerMetadata: any = {};
+    if (synthesis.metadata?.visualizations) {
+      answerMetadata.visualizations = synthesis.metadata.visualizations;
+      console.log('[IterativeRefinementPattern] Including visualization data in final answer step');
+    }
+
+    yield this.createStep('answer', synthesis.output, {
+      metadata: Object.keys(answerMetadata).length > 0 ? answerMetadata : undefined
+    });
   }
 }

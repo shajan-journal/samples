@@ -1,5 +1,7 @@
 # Next Implementation Phase: Visualization Support
 
+> **Note for AI Readers:** This is the **detailed planning document** for the next development phase (Step 13). For current status, see [docs/current_state.md](current_state.md). This represents the planned work, not current implementation.
+
 ## Overview
 
 Implement visualization support to complete the core scenario - code generation → data analysis → visualization. This enables the agent to generate Python code that produces interactive charts and tables visible in the UI.

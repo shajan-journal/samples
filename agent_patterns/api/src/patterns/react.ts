@@ -148,6 +148,19 @@ export class ReActPattern extends BasePattern {
 
         // If tools were called
         if (toolUseResult.toolCalls && toolUseResult.toolCalls.length > 0) {
+          // Check if visualizations were generated and update context state
+          if (toolUseResult.metadata?.visualizations) {
+            if (!context.state) {
+              context.state = {};
+            }
+            context.state.visualizations = toolUseResult.metadata.visualizations;
+            console.log('[ReActPattern] Captured visualization data from tool execution', {
+              hasOutputs: !!toolUseResult.metadata.visualizations?.outputs,
+              outputCount: toolUseResult.metadata.visualizations?.outputs?.length || 0,
+              firstOutputHasData: !!toolUseResult.metadata.visualizations?.outputs?.[0]?.data
+            });
+          }
+
           // Add assistant's tool call message with tool_calls property
           // This is required by OpenAI API to properly link tool calls with their results
           messages.push({
@@ -249,11 +262,19 @@ export class ReActPattern extends BasePattern {
       return;
     }
 
+    // Extract visualizations from synthesis metadata if present
+    const stepMetadata: any = { 
+      iterations: iteration, 
+      sources: synthesisResult.metadata?.sources 
+    };
+    
+    if (synthesisResult.metadata?.visualizations) {
+      stepMetadata.visualizations = synthesisResult.metadata.visualizations;
+      console.log('[ReActPattern] Including visualization data in final answer step');
+    }
+
     yield this.createStep('answer', synthesisResult.output, {
-      metadata: { 
-        iterations: iteration, 
-        sources: synthesisResult.metadata?.sources 
-      }
+      metadata: stepMetadata
     });
   }
 

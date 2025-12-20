@@ -34,8 +34,9 @@ export class ReasoningCapability extends BaseCapability {
       // Detect if user explicitly asks for tools or if task requires code execution
       const explicitlyAsksForTools = /\b(use tools?|try tools?|using tools?|with tools?|tool)\b/i.test(userMessage);
       const isAlgorithmicTask = /\b(reverse|sort|calculate|compute|parse|transform|filter)\b/i.test(userMessage);
+      const requiresVisualization = /\b(plot|chart|graph|visuali[sz]e|bar chart|line chart|pie chart|histogram|scatter)\b/i.test(userMessage);
       // Only suggest code if we DON'T already have tool results
-      const shouldSuggestCode = !hasToolResults && hasCodeExecution && (explicitlyAsksForTools || isAlgorithmicTask);
+      const shouldSuggestCode = !hasToolResults && hasCodeExecution && (explicitlyAsksForTools || isAlgorithmicTask || requiresVisualization);
 
       console.log('[DEBUG] Reasoning detection:', {
         userMessage: userMessage.substring(0, 100),
@@ -43,6 +44,7 @@ export class ReasoningCapability extends BaseCapability {
         hasToolResults,
         explicitlyAsksForTools,
         isAlgorithmicTask,
+        requiresVisualization,
         shouldSuggestCode
       });
 
@@ -143,6 +145,14 @@ Instructions:
 
     if (hasCodeExecution) {
       prompt += `
+
+OUTPUT CAPABILITIES:
+Consider what type of output is needed:
+- Visualizations (charts, plots): Requires python_execution tool with CSV + manifest (not matplotlib)
+- Calculations: May need calculator or python_execution tool
+- Data analysis: May need python_execution tool
+- File operations: May need file_system tool
+- Simple text answers: No tools needed
 
 CRITICAL RULE - Code execution vs manual reasoning:
 As an AI language model, you are EXCELLENT at:
