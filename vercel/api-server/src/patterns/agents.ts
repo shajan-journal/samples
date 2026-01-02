@@ -1,7 +1,31 @@
 import { generateText, generateObject, stepCountIs } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { weatherTool, calculatorTool, searchTool } from './tools.js';
+import { 
+  weatherTool, 
+  calculatorTool, 
+  searchTool,
+  // Journal Tools
+  journalListTasksTool,
+  journalGetTaskTool,
+  journalCreateTaskTool,
+  journalUpdateTaskTool,
+  journalDeleteTaskTool,
+  journalGetTaskCommentsTool,
+  journalGetTaskResourcesTool,
+  journalListProjectsTool,
+  journalGetProjectTool,
+  journalListDocumentsTool,
+  journalGetDocumentTool,
+  journalCreateDocumentTool,
+  journalUpdateDocumentTool,
+  journalListProjectDocumentsTool,
+  journalListWorkspacesTool,
+  journalGetWorkspaceTool,
+  journalSearchTool,
+  journalSearchMembersTool,
+  journalListLabelsTool,
+} from './tools.js';
 
 /**
  * ReAct Pattern (Reasoning + Acting)
@@ -15,6 +39,12 @@ export async function runReActAgent(prompt: string) {
   const result = await generateText({
     model: openai.chat('gpt-4o-mini'),
     system: `You are a helpful assistant that uses tools to answer questions.
+
+You have access to Journal - a project management tool. Use the journal* tools to:
+- List, get, create, update, delete tasks
+- List and get projects
+- Search across all content
+- Manage documents and workspaces
     
 For each request:
 1. THINK: Analyze what information you need
@@ -28,6 +58,26 @@ Always explain your reasoning before taking actions.`,
       weather: weatherTool,
       calculator: calculatorTool,
       search: searchTool,
+      // Journal Tools
+      journalListTasks: journalListTasksTool,
+      journalGetTask: journalGetTaskTool,
+      journalCreateTask: journalCreateTaskTool,
+      journalUpdateTask: journalUpdateTaskTool,
+      journalDeleteTask: journalDeleteTaskTool,
+      journalGetTaskComments: journalGetTaskCommentsTool,
+      journalGetTaskResources: journalGetTaskResourcesTool,
+      journalListProjects: journalListProjectsTool,
+      journalGetProject: journalGetProjectTool,
+      journalListDocuments: journalListDocumentsTool,
+      journalGetDocument: journalGetDocumentTool,
+      journalCreateDocument: journalCreateDocumentTool,
+      journalUpdateDocument: journalUpdateDocumentTool,
+      journalListProjectDocuments: journalListProjectDocumentsTool,
+      journalListWorkspaces: journalListWorkspacesTool,
+      journalGetWorkspace: journalGetWorkspaceTool,
+      journalSearch: journalSearchTool,
+      journalSearchMembers: journalSearchMembersTool,
+      journalListLabels: journalListLabelsTool,
     },
     stopWhen: stepCountIs(10),
   });

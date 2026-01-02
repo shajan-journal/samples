@@ -37,7 +37,7 @@ export default function App() {
   // Original chat hook
   const { messages, status, error, sendMessage } = useChat({
     transport: new DefaultChatTransport({
-      api: 'http://localhost:3001/api/chat',
+      api: 'http://localhost:3002/api/chat',
     }),
   });
 
@@ -52,7 +52,7 @@ export default function App() {
 
   // Fetch available patterns on mount
   useEffect(() => {
-    fetch('http://localhost:3001/api/patterns')
+    fetch('http://localhost:3002/api/patterns')
       .then(res => res.json())
       .then(data => setPatterns(data.patterns))
       .catch(err => console.error('Failed to load patterns:', err));
@@ -85,7 +85,7 @@ export default function App() {
         : 'task';
 
       // Use streaming endpoint
-      const streamEndpoint = `http://localhost:3001${pattern.endpoint}/stream`;
+      const streamEndpoint = `http://localhost:3002${pattern.endpoint}/stream`;
       
       const response = await fetch(streamEndpoint, {
         method: 'POST',
