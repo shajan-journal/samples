@@ -137,7 +137,11 @@ app.get('/api/tool-coverage', async (_req, res) => {
     }
 
     // Get available tools from Journal
-    const journalToolsPath = '/Users/shajandasan/src/journal/packages/tools/src/definitions'
+    const journalSrcDir = process.env.JOURNAL_SRC_DIR
+    if (!journalSrcDir) {
+      return res.status(400).json({ error: 'JOURNAL_SRC_DIR not configured' })
+    }
+    const journalToolsPath = path.join(journalSrcDir, 'packages/tools/src/definitions')
     const availableTools = new Set<string>()
 
     const walkDir = (dir: string) => {
