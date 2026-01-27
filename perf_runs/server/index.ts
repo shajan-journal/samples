@@ -4,8 +4,13 @@ import pg from 'pg'
 import { config } from 'dotenv'
 import { spawn } from 'child_process'
 import path from 'path'
+import Anthropic from '@anthropic-ai/sdk'
 
 config()
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+})
 
 const app = express()
 app.use(cors())
@@ -277,6 +282,153 @@ app.post('/api/stop-run/:runId', (req, res) => {
   run.process.kill()
   run.status = 'failed'
   res.json({ message: 'Run stopped' })
+})
+
+// AI Assistant endpoint
+app.post('/api/ask', async (req, res) => {
+  const { question } = req.body
+
+  if (!question) {
+    return res.status(400).json({ error: 'Question is required' })
+  }
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(400).json({ error: 'ANTHROPIC_API_KEY not configured' })
+  }
+
+  try {
+    // Fetch recent evaluation data for context
+    const [agentRuns, latencyRuns] = await Promise.all([
+      pool.query(`
+        SELECT
+          run_id, timestamp, model, prompt_type, total_test_cases,
+          avg_faithfulness, avg_correctness, avg_tool_call_coverage,
+          avg_response_latency_ms, all_metrics_pass_pct, api_commit_sha
+        FROM agent_evaluation_runs
+        ORDER BY timestamp DESC
+        LIMIT 20
+      `),
+      pool.query(`
+        SELECT
+          run_id, timestamp, model, prompt_type, query,
+          avg_latency_ms, min_latency_ms, max_latency_ms, p50_latency_ms, p95_latency_ms
+        FROM agent_latency_runs
+        ORDER BY timestamp DESC
+        LIMIT 20
+      `),
+    ])
+
+    const systemPrompt = `You are an AI assistant for a Journal agent evaluation dashboard. You help users analyze evaluation metrics and performance data.
+
+You have access to the following evaluation data:
+
+## Recent Agent Evaluation Runs (last 20):
+${JSON.stringify(agentRuns.rows, null, 2)}
+
+## Recent Latency Benchmark Runs (last 20):
+${JSON.stringify(latencyRuns.rows, null, 2)}
+
+## Key Metrics Explained:
+- avg_faithfulness: How faithful the agent's response is to the context (0-1)
+- avg_correctness: How correct/accurate the response is (0-1)
+- avg_tool_call_coverage: Percentage of expected tools that were called (0-1)
+- all_metrics_pass_pct: Percentage of test cases passing all metrics
+- avg_response_latency_ms: Average response time in milliseconds
+
+When answering questions, you MUST respond with a JSON object containing:
+1. "text": A brief text explanation (1-3 sentences)
+2. "structured": A structured response for rich visual display
+
+IMPORTANT: Always prefer visual responses (tables, charts, metrics) over plain text when the data supports it.
+
+VISUALIZATION RULES (follow strictly):
+- If the user asks about "trend", "over time", "history", "progression", or "change" → ALWAYS use "chart" (line chart)
+- If the user asks to "compare" models, categories, or options → use "bar_chart"
+- If the user asks for a "summary", "overview", or key numbers → use "metric"
+- If the user asks to "list" or "show all" or wants detailed rows → use "table"
+- Only omit "structured" for simple yes/no or factual questions
+
+When data has timestamps/dates and user asks about trends, YOU MUST use a chart, not a table.
+
+The "structured" field should be one of these types:
+
+For metrics/KPIs:
+{
+  "type": "metric",
+  "metrics": [{ "label": "Label", "value": "Value", "delta": "+/-X vs previous" }]
+}
+
+For tables:
+{
+  "type": "table",
+  "title": "Table Title",
+  "columns": ["Column1", "Column2"],
+  "data": [{ "Column1": "val1", "Column2": "val2" }]
+}
+
+For line charts (trends over time):
+{
+  "type": "chart",
+  "title": "Chart Title",
+  "data": [{ "x": "label", "y1": 10, "y2": 20 }],
+  "chartConfig": {
+    "xKey": "x",
+    "lines": [{ "key": "y1", "name": "Series 1", "color": "#3b82f6" }]
+  }
+}
+
+For bar charts (comparisons):
+{
+  "type": "bar_chart",
+  "title": "Chart Title",
+  "data": [{ "x": "Category", "value": 10 }],
+  "chartConfig": {
+    "xKey": "x",
+    "bars": [{ "key": "value", "name": "Value", "color": "#22c55e" }]
+  }
+}
+
+Always respond with valid JSON only. No markdown, no extra text outside the JSON.
+Use colors: blue (#3b82f6), green (#22c55e), yellow (#f59e0b), pink (#ec4899), purple (#8b5cf6).`
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [
+        { role: 'user', content: question }
+      ],
+      system: systemPrompt,
+    })
+
+    const content = response.content[0]
+    if (content.type !== 'text') {
+      return res.status(500).json({ error: 'Unexpected response type' })
+    }
+
+    try {
+      // Strip markdown code blocks if present
+      let jsonText = content.text.trim()
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.slice(7)
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.slice(3)
+      }
+      if (jsonText.endsWith('```')) {
+        jsonText = jsonText.slice(0, -3)
+      }
+      jsonText = jsonText.trim()
+
+      const parsed = JSON.parse(jsonText)
+      res.json(parsed)
+    } catch (parseErr) {
+      // If JSON parsing fails, return as plain text
+      console.error('JSON parse error:', parseErr, 'Raw:', content.text.slice(0, 200))
+      res.json({ text: content.text })
+    }
+  } catch (err) {
+    console.error('Error in AI assistant:', err)
+    res.status(500).json({ error: 'Failed to get AI response' })
+  }
 })
 
 const PORT = 3333

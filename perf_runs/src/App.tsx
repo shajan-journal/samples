@@ -3,8 +3,9 @@ import { AgentRuns } from './components/AgentRuns'
 import { ToolCoverage } from './components/ToolCoverage'
 import { TriggerRun } from './components/TriggerRun'
 import { TrendChart } from './components/TrendChart'
+import { AIAssistant } from './components/AIAssistant'
 
-type Tab = 'overview' | 'agent' | 'coverage' | 'trigger'
+type Tab = 'overview' | 'agent' | 'coverage' | 'trigger' | 'assistant'
 
 interface Config {
   evalDir: string
@@ -49,9 +50,13 @@ export default function App() {
         <button className={`tab ${tab === 'trigger' ? 'active' : ''}`} onClick={() => setTab('trigger')}>
           Trigger Run
         </button>
+        <button className={`tab ${tab === 'assistant' ? 'active' : ''}`} onClick={() => setTab('assistant')}>
+          AI Assistant
+        </button>
       </div>
 
       {tab === 'overview' && <Overview />}
+      {tab === 'assistant' && <AIAssistant />}
       {tab === 'agent' && <AgentRuns />}
       {tab === 'coverage' && <ToolCoverage />}
       {tab === 'trigger' && <TriggerRun config={config} />}

@@ -39,6 +39,9 @@ NEON_BRANCH_ID=""
 # Default eval settings
 DEFAULT_MODEL="claude-opus-4-5"
 DEFAULT_PROMPT_TYPE="lean"
+
+# Anthropic API Key (for AI Assistant)
+ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
 ### Getting the Auth Cookie
@@ -71,6 +74,16 @@ DEFAULT_PROMPT_TYPE="lean"
 - Real-time output streaming
 - Stop running evaluations
 
+### AI Assistant
+- Chat interface for querying evaluation data
+- Powered by Claude API
+- Structured responses rendered as:
+  - Metric cards with KPIs
+  - Data tables
+  - Line charts (trends)
+  - Bar charts (comparisons)
+- Context-aware: has access to last 20 agent and latency runs
+
 ## Architecture
 
 ```
@@ -81,6 +94,7 @@ perf_runs/
 │   ├── App.tsx         # Main app with tabs
 │   ├── components/
 │   │   ├── AgentRuns.tsx
+│   │   ├── AIAssistant.tsx
 │   │   ├── ToolCoverage.tsx
 │   │   ├── TriggerRun.tsx
 │   │   └── TrendChart.tsx
@@ -103,6 +117,7 @@ perf_runs/
 | `POST /api/trigger-run` | Start a new evaluation |
 | `GET /api/run-status/:runId` | Get status of running evaluation |
 | `POST /api/stop-run/:runId` | Stop a running evaluation |
+| `POST /api/ask` | AI Assistant - ask questions about eval data |
 
 ---
 
