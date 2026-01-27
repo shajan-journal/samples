@@ -133,7 +133,7 @@ export function TriggerRun({ config }: TriggerRunProps) {
             <select value={model} onChange={e => setModel(e.target.value)} style={{ width: '100%' }}>
               <option value="claude-opus-4-5">claude-opus-4-5</option>
               <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
-              <option value="claude-sonnet-4">claude-sonnet-4</option>
+              <option value="gpt-5-2">gpt-5-2</option>
             </select>
           </div>
 
@@ -143,6 +143,7 @@ export function TriggerRun({ config }: TriggerRunProps) {
               <option value="lean">lean</option>
               <option value="default">default</option>
               <option value="detective">detective</option>
+              <option value="hybrid">hybrid</option>
             </select>
           </div>
 
